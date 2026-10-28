@@ -1,0 +1,49 @@
+mod examples;
+
+use std::dev;
+
+type address = [city: string, zip: string];
+type user = [
+    id: int,
+    name: string,
+    age: int,
+    flags: u8,
+    perms: u16,
+    color: u32,
+    tags: vec<string>,
+    scores: map<string, int>,
+    address: address
+];
+
+const MAX_AGE: int = 150;
+static APP_NAME: string = "types_demo";
+
+func main() -> void {
+    let a: int = 42;
+    let b: i32 = 42i32;
+    let c: u8 = 0b1010;
+    let d: u16 = 0o755;
+    let e: u32 = 0xFF;
+    let sum: int = a + b.to_int() + c.to_int() + d.to_int() + e.to_int();
+    dev.log("sum = " + sum.to_string());
+
+    let s: string = "hello";
+    let ch: string = 'a';
+    dev.log(s + ch);
+
+    let u: user = [
+        id = 1,
+        name = "张三",
+        age = 25,
+        flags = 0b1010,
+        perms = 0o755,
+        color = 0xFF00FF,
+        tags = ["a", "b"],
+        scores = ["math" = 90, "english" = 85],
+        address = [city = "北京", zip = "100000"]
+    ];
+
+    dev.log("u.name = " + u.name);
+    dev.log("u.address.city = " + u.address.city);
+    dev.log("u.color.to_int = " + u.color.to_int().to_string());
+}

@@ -1,0 +1,117 @@
+mod examples;
+
+// defer 验证：参数在 defer 处就地求值、退出时 LIFO 执行、
+// 函数帧之间互相隔离、`?` 与 `return err(...)` 提前返回时仍然执行。
+
+use std::dev;
+
+func fail() -> result<int, string> {
+    return err("boom");
+}
+
+/// 登记顺序 a → b，退出时倒序执行：b, a。
+func collect(write trace: vec<string>) -> void {
+    defer trace.push("a");
+    defer trace.push("b");
+    dev.assert(trace.len() == 0);
+    dev.log("collect 返回后才会执行 defer");
+}
+
+/// 实参在 defer 处求值：改名不会影响已经捕获的值。
+func capture(write trace: vec<string>) -> void {
+    let mut name: string = "before";
+    defer trace.push(name);
+    name = "after";
+}
+
+/// `?` 提前返回时仍然执行 defer。
+func work(write trace: vec<string>) -> result<int, string> {
+    defer trace.push("cleanup");
+    let value: int = fail()?;
+    return ok(value);
+}
+
+/// 正常返回路径同样执行 defer。
+func work_ok(write trace: vec<string>) -> result<int, string> {
+    defer trace.push("cleanup");
+    return ok(7);
+}
+
+/// 循环里可以登记多次，退出时倒序执行。
+func loop_defers(write trace: vec<string>) -> void {
+    let mut i: int = 0;
+    while i < 3 {
+        defer trace.push("step" + i.to_string());
+        i = i + 1;
+    }
+}
+
+func inner(write trace: vec<string>) -> void {
+    defer trace.push("inner");
+}
+
+/// 每个函数帧的 defer 只在自己的退出点执行。
+func outer(write trace: vec<string>) -> void {
+    defer trace.push("outer");
+    inner(trace);
+    dev.assert(trace.join(",") == "inner");
+}
+
+/// 模块调用：`defer dev.log(...)`。
+func greet() -> void {
+    defer dev.log("greet 退出时的日志");
+    dev.log("greet 函数体");
+}
+
+type ledger = [entries: vec<string>];
+
+func ledger.record(write l: ledger, item: string) -> void {
+    l.entries.push(item);
+}
+
+/// 用户方法调用：`defer l.record(...)`。
+func record_via_defer(write l: ledger) -> void {
+    defer l.record("closed");
+}
+
+func main() -> void {
+    let mut order: vec<string> = [];
+    collect(order);
+    dev.assert(order.join(",") == "b,a");
+
+    let mut early: vec<string> = [];
+    capture(early);
+    dev.assert(early.join(",") == "before");
+
+    let mut cleanup: vec<string> = [];
+    let outcome: result<int, string> = work(cleanup);
+    match outcome {
+        ok(value) => { dev.assert(false); }
+        err(message) => { dev.assert(message == "boom"); }
+    }
+    dev.assert(cleanup.join(",") == "cleanup");
+
+    let mut normal: vec<string> = [];
+    let value: result<int, string> = work_ok(normal);
+    match value {
+        ok(number) => { dev.assert(number == 7); }
+        err(message) => { dev.assert(false); }
+    }
+    dev.assert(normal.join(",") == "cleanup");
+
+    let mut steps: vec<string> = [];
+    loop_defers(steps);
+    dev.assert(steps.join(",") == "step2,step1,step0");
+
+    let mut frames: vec<string> = [];
+    outer(frames);
+    dev.assert(frames.join(",") == "inner,outer");
+
+    greet();
+
+    let mut book: ledger = [entries = []];
+    record_via_defer(book);
+    dev.assert(book.entries.join(",") == "closed");
+
+    dev.log("defer ok");
+}

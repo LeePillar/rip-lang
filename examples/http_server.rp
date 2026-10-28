@@ -1,0 +1,51 @@
+mod examples;
+
+use std::http;
+use std::dev;
+
+type user = [id: int, name: string, age: int, tags: vec<string>, created_at: string];
+
+// 示例数据：模块级常量，处理函数可以直接读取。
+const USERS: map<string, user> = [
+    "1" = [id = 1, name = "张三", age = 25, tags = ["admin"], created_at = "2024-01-01"]
+];
+
+func index_page(req: http.request) -> http.response {
+    return http.response[status = 200, json = [message = "Hello, Rip!"]];
+}
+
+func text_page(req: http.request) -> http.response {
+    return http.response[
+        status = 200,
+        headers = ["Content-Type" = "text/plain; charset=utf-8"],
+        body = "Hello, Rip!"
+    ];
+}
+
+func html_page(req: http.request) -> http.response {
+    let html: string = "<h1>Hello, Rip!</h1>";
+    return http.response[
+        status = 200,
+        headers = ["Content-Type" = "text/html; charset=utf-8"],
+        body = html
+    ];
+}
+
+func user_detail(req: http.request) -> http.response {
+    let id: string = req.params.get("id").unwrap_or("0");
+    match USERS.get(id) {
+        some(u) => { return http.response[status = 200, json = u]; }
+        none => { return http.response[status = 404, json = [error = "not found"]]; }
+    }
+}
+
+func main() -> void {
+    dev.log("starting http server");
+
+    http.serve(8080, http.router([
+        http.get("/", index_page),
+        http.get("/text", text_page),
+        http.get("/html", html_page),
+        http.get("/users/:id", user_detail)
+    ]));
+}

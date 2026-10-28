@@ -1,0 +1,44 @@
+mod support;
+
+use std::http;
+
+// 统一 JSON 响应：{"code":0,"message":"ok","data":...}
+
+func json_fail(status: int, message: string) -> http.response {
+    return http.response[
+        status = status,
+        json = [code = status, message = message]
+    ];
+}
+
+func json_ok(data: any) -> http.response {
+    return http.response[
+        status = 200,
+        json = [code = 0, message = "ok", data = data]
+    ];
+}
+
+func json_created(data: any) -> http.response {
+    return http.response[
+        status = 201,
+        json = [code = 0, message = "created", data = data]
+    ];
+}
+
+/// 服务层结果 → HTTP 响应，控制器只做这一层转换。
+func respond(read outcome: service_result) -> http.response {
+    let success: bool = outcome.get("success").unwrap_or(false).as_bool().unwrap_or(false);
+    let status: int = outcome.get("status").unwrap_or(500).as_int().unwrap_or(500);
+    let message: string = outcome.get("message").unwrap_or("").as_string().unwrap_or("");
+    let data: any = outcome.get("data").unwrap_or(null);
+
+    let mut payload: map<string, any> = [
+        "code" = 0,
+        "message" = message,
+        "data" = data
+    ];
+    if !success {
+        payload.set("code", status);
+    }
+    return http.response[status = status, json = payload];
+}

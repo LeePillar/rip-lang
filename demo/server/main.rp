@@ -1,0 +1,40 @@
+mod server;
+
+use std::db;
+use std::dev;
+use std::fs;
+use std::http;
+
+// 入口：打开数据库 → 建表 → 种子管理员 → 启动 HTTP。
+//
+// 目录分层（同目录同包，包名 = 目录名）：
+//   models/      表结构与数据访问（链式 ORM）
+//   services/    业务规则，返回 service_result
+//   controllers/ 请求解析与响应组装，函数上用 #[get("/path")] 声明路由
+//   middleware/  鉴权
+//   support/     请求 / 响应 / 校验 / 连接工具
+//   routes.rp    显式路由表（仅静态资源）
+//   config.rp    配置
+
+func main() -> void {
+    let dsn: string = config_dsn();
+    dev.log("database: " + dsn);
+
+    // 上传目录缺失时先建好，保证首次上传即可写入。
+    match fs.make_dir(config_upload_dir()) {
+        ok(created) => {}
+        err(message) => { dev.log("cannot create upload dir: " + message); }
+    }
+
+    match db.open(dsn) {
+        ok(conn) => {
+            schema_setup(conn);
+            schema_seed_admin(conn);
+            // 注解路由在 http.router 构建时自动注册；这里只补静态资源。
+            http.serve(8080, http.router(build_routes()));
+        }
+        err(message) => {
+            dev.log("cannot open database: " + message);
+        }
+    }
+}

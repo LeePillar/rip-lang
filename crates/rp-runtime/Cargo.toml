@@ -1,0 +1,56 @@
+[package]
+name = "rp-runtime"
+version.workspace = true
+edition.workspace = true
+
+[features]
+# 解释执行（AST 解释器 + 字节码 VM）。关闭后只剩值模型、标准库与 AOT 宿主，
+# 供 `rip build --aot` 链接出不含解释器的原生二进制。
+default = ["interp"]
+interp = []
+
+[dependencies]
+rp-ast = { path = "../rp-ast" }
+rp-types = { path = "../rp-types" }
+rp-rust-interop = { path = "../rp-rust-interop" }
+libloading = "0.8"
+serde_json = "1"
+# JSON 快速路径：整数直写缓冲（serde_json 传递依赖，这里显式声明）。
+itoa = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+mysql = { version = "28", default-features = false, features = ["default-rust"] }
+postgres = "0.19"
+tiberius = { version = "0.13", default-features = false, features = ["tds73", "native-tls"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "net", "time", "sync", "io-util", "fs"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+md-5 = "0.10"
+sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+getrandom = "0.2"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# 时区：IANA 数据库（含夏令时规则），本地时区名解析。
+chrono-tz = "0.10"
+iana-time-zone = "0.1"
+# Unicode：归一化、字素簇、显示宽度。
+unicode-normalization = "0.1"
+unicode-segmentation = "1"
+unicode-width = "0.2"
+# ZIP 归档（deflate，与 rp-cli 打包用的是同一实现）。
+zip = { version = "2", default-features = false, features = ["deflate"] }
+# 邮件：SMTP 客户端，TLS 复用 rustls + ring。
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "rustls-tls", "hostname"] }
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+rustls-pemfile = "2"
+webpki-roots = "0.26"
+aes-gcm = "0.10"
+rsa = { version = "0.9", features = ["sha2"] }
+sha1 = "0.10"
+crossbeam-channel = "0.5"
+# termination：Unix 上同时注册 SIGTERM / SIGHUP，容器滚动发布才能优雅停机。
+ctrlc = { version = "3", features = ["termination"] }
+regex = "1"
+flate2 = "1"
+# multipart 解析用两路（Two-Way）子串查找，保证 O(n) 不会退化成逐字节比较。
+memchr = "2"
+tokio-postgres-rustls = "0.14.0"

@@ -1,0 +1,38 @@
+mod controllers;
+
+use std::crypto;
+use std::db;
+use std::http;
+
+// 文件控制器：multipart/form-data 上传，保存到 config_upload_dir() 配置的目录。
+
+#[post("/api/upload")]
+func upload_action(read req: http.request) -> http.response {
+    return with_conn(req, upload_handle);
+}
+
+func upload_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    let dir: string = config_upload_dir();
+    let mut saved: vec<string> = [];
+    let mut failed: int = 0;
+    for file in req.files.clone() {
+        match http.save_file(dir, file) {
+            ok(path) => { saved.push(path); }
+            err(message) => { failed = failed + 1; }
+        }
+    }
+    if saved.len() == 0 {
+        return json_fail(400, "no file uploaded");
+    }
+    let mut payload: map<string, any> = [
+        "code" = 0,
+        "message" = "uploaded",
+        "files" = saved,
+        "failed" = failed
+    ];
+    return http.response[status = 201, json = payload];
+}

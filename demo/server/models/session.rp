@@ -1,0 +1,44 @@
+mod models;
+
+use std::db;
+
+// sessions 表：登录态与过期时间。
+
+func session_replace(
+    read conn: db.conn,
+    user_id: int,
+    read token: string,
+    expires_at: int,
+    read created_at: string
+) -> result<int, string> {
+    match session_remove_user(conn, user_id) {
+        ok(count) => { }
+        err(message) => { return err(message); }
+    }
+
+    let values: map<string, any> = [
+        "token" = token,
+        "user_id" = user_id,
+        "expires_at" = expires_at,
+        "created_at" = created_at
+    ];
+    return db.table(conn, "sessions").insert(values);
+}
+
+func session_find_user(read conn: db.conn, read token: string, now: int) -> result<option<map<string, any>>, string> {
+    let sql: string = "SELECT u.id AS id, u.name AS name, u.email AS email, u.phone AS phone, u.role AS role, u.status AS status, u.created_at AS created_at, u.updated_at AS updated_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?";
+    let params: vec<any> = [token, now];
+    return conn.query_one(sql, params);
+}
+
+func session_remove(read conn: db.conn, read token: string) -> result<int, string> {
+    return db.table(conn, "sessions").where("token", "=", token).delete();
+}
+
+func session_remove_user(read conn: db.conn, user_id: int) -> result<int, string> {
+    return db.table(conn, "sessions").where("user_id", "=", user_id).delete();
+}
+
+func session_remove_expired(read conn: db.conn, now: int) -> result<int, string> {
+    return db.table(conn, "sessions").where("expires_at", "<", now).delete();
+}

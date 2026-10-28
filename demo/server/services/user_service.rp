@@ -1,0 +1,225 @@
+mod services;
+
+use std::db;
+use std::time;
+
+// 用户业务：列表 / 详情 / 新增 / 修改 / 删除。
+
+func user_list(
+    read conn: db.conn,
+    page: int,
+    limit: int,
+    read keyword: string,
+    read status: string
+) -> service_result {
+    let mut current: int = page;
+    if current < 1 {
+        current = 1;
+    }
+    let mut size: int = limit;
+    if size < 1 {
+        size = 10;
+    }
+    if size > 100 {
+        size = 100;
+    }
+    let offset: int = (current - 1) * size;
+
+    match user_count(conn, keyword, status) {
+        ok(total) => {
+            match user_page(conn, keyword, status, offset, size) {
+                ok(items) => {
+                    return svc_ok([items = items, total = total, page = current, limit = size]);
+                }
+                err(message) => { return svc_fail(500, "database: " + message); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+    return svc_fail(500, "unreachable");
+}
+
+func user_detail(read conn: db.conn, id: int) -> service_result {
+    match user_find(conn, id) {
+        ok(row) => {
+            match row {
+                some(user) => { return svc_ok(user); }
+                none => { return svc_fail(404, "user not found"); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+}
+
+func user_create(read conn: db.conn, read body: map<string, any>) -> service_result {
+    let name: string = field_string(body, "name").trim();
+    let email: string = field_string(body, "email").trim();
+    let phone: string = field_string(body, "phone").trim();
+    let password: string = field_string(body, "password");
+    let mut role: string = field_string(body, "role").trim();
+    if role.len() == 0 {
+        role = "user";
+    }
+    let mut status: string = field_string(body, "status").trim();
+    if status.len() == 0 {
+        status = "active";
+    }
+
+    if name.len() < 2 {
+        return svc_fail(400, "name must be at least 2 characters");
+    }
+    if !valid_email(email) {
+        return svc_fail(400, "email is invalid");
+    }
+    if password.len() < 6 {
+        return svc_fail(400, "password must be at least 6 characters");
+    }
+    if !valid_role(role) {
+        return svc_fail(400, "role must be admin or user");
+    }
+    if !valid_status(status) {
+        return svc_fail(400, "status must be active or disabled");
+    }
+
+    match user_find_by_email(conn, email) {
+        ok(row) => {
+            match row {
+                some(existing) => { return svc_fail(409, "email already registered"); }
+                none => { }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+
+    let now: string = time.now().to_string();
+    let values: map<string, any> = [
+        "name" = name,
+        "email" = email,
+        "phone" = phone,
+        "password" = hash_password(password),
+        "role" = role,
+        "status" = status,
+        "created_at" = now,
+        "updated_at" = now
+    ];
+    match user_store(conn, values) {
+        ok(id) => {
+            match user_find(conn, id) {
+                ok(row) => {
+                    match row {
+                        some(user) => { return svc_created(user); }
+                        none => { return svc_fail(500, "insert failed"); }
+                    }
+                }
+                err(message) => { return svc_fail(500, "database: " + message); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+    return svc_fail(500, "unreachable");
+}
+
+func user_update(read conn: db.conn, id: int, read body: map<string, any>) -> service_result {
+    let name: string = field_string(body, "name").trim();
+    let email: string = field_string(body, "email").trim();
+    let phone: string = field_string(body, "phone").trim();
+    let password: string = field_string(body, "password");
+    let role: string = field_string(body, "role").trim();
+    let status: string = field_string(body, "status").trim();
+
+    if name.len() == 0 && email.len() == 0 && phone.len() == 0 && password.len() == 0 && role.len() == 0 && status.len() == 0 {
+        return svc_fail(400, "nothing to update");
+    }
+    if name.len() > 0 && name.len() < 2 {
+        return svc_fail(400, "name must be at least 2 characters");
+    }
+    if email.len() > 0 && !valid_email(email) {
+        return svc_fail(400, "email is invalid");
+    }
+    if password.len() > 0 && password.len() < 6 {
+        return svc_fail(400, "password must be at least 6 characters");
+    }
+    if role.len() > 0 && !valid_role(role) {
+        return svc_fail(400, "role must be admin or user");
+    }
+    if status.len() > 0 && !valid_status(status) {
+        return svc_fail(400, "status must be active or disabled");
+    }
+
+    match user_find(conn, id) {
+        ok(row) => {
+            match row {
+                some(existing) => { }
+                none => { return svc_fail(404, "user not found"); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+
+    if email.len() > 0 {
+        match db.table(conn, "users")
+            .where("id", "!=", id)
+            .where("email", "=", email)
+            .find()
+        {
+            ok(row) => {
+                match row {
+                    some(other) => { return svc_fail(409, "email already registered"); }
+                    none => { }
+                }
+            }
+            err(message) => { return svc_fail(500, "database: " + message); }
+        }
+    }
+
+    let mut changes: map<string, any> = [];
+    if name.len() > 0 {
+        changes.set("name", name);
+    }
+    if email.len() > 0 {
+        changes.set("email", email);
+    }
+    if phone.len() > 0 {
+        changes.set("phone", phone);
+    }
+    if password.len() > 0 {
+        changes.set("password", hash_password(password));
+    }
+    if role.len() > 0 {
+        changes.set("role", role);
+    }
+    if status.len() > 0 {
+        changes.set("status", status);
+    }
+    changes.set("updated_at", time.now().to_string());
+
+    match user_patch(conn, id, changes) {
+        ok(count) => {
+            if count == 0 {
+                return svc_fail(404, "user not found");
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+
+    return user_detail(conn, id);
+}
+
+func user_delete(read conn: db.conn, me_id: int, id: int) -> service_result {
+    if me_id == id {
+        return svc_fail(400, "cannot delete the signed-in user");
+    }
+    match session_remove_user(conn, id) {
+        ok(count) => { }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+    match user_remove(conn, id) {
+        ok(count) => {
+            if count == 0 {
+                return svc_fail(404, "user not found");
+            }
+            return svc_ok([deleted = count]);
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+}

@@ -1,0 +1,23 @@
+mod services;
+
+// 服务层统一返回值：控制器据此生成 HTTP 响应，服务层不依赖 http。
+//
+// service_result 字段：
+//   success  bool   业务是否成功
+//   status   int    建议的 HTTP 状态码
+//   message  string 提示信息
+//   data     any    业务数据
+
+type service_result = map<string, any>;
+
+func svc_ok(data: any) -> service_result {
+    return ["success" = true, "status" = 200, "message" = "ok", "data" = data];
+}
+
+func svc_created(data: any) -> service_result {
+    return ["success" = true, "status" = 201, "message" = "created", "data" = data];
+}
+
+func svc_fail(status: int, message: string) -> service_result {
+    return ["success" = false, "status" = status, "message" = message, "data" = null];
+}

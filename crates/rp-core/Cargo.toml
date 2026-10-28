@@ -1,0 +1,9 @@
+[package]
+name = "rp-core"
+version.workspace = true
+edition.workspace = true
+
+# AOT 专用门面：只包含值模型、标准库与原生宿主，不编译 AST 解释器与字节码 VM。
+# 解释执行继续使用 `rp-runtime`（默认 feature `interp`）。
+[dependencies]
+rp-runtime = { path = "../rp-runtime", default-features = false }

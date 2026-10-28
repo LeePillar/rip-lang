@@ -1,0 +1,25 @@
+[package]
+name = "rp-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "rip"
+path = "src/main.rs"
+
+[dependencies]
+rp-ast = { path = "../rp-ast" }
+rp-lexer = { path = "../rp-lexer" }
+rp-parser = { path = "../rp-parser" }
+rp-types = { path = "../rp-types" }
+rp-ownership = { path = "../rp-ownership" }
+rp-runtime = { path = "../rp-runtime" }
+rp-rust-interop = { path = "../rp-rust-interop" }
+rp-lsp = { path = "../rp-lsp" }
+rp-dap = { path = "../rp-dap" }
+sha2 = "0.10"
+# 构建完成后把整个交付目录打成压缩包，便于直接分发。
+zip = { version = "2", default-features = false, features = ["deflate"] }
+# 远端 registry 拉取（HTTP + rustls）。
+ureq = "2"
+serde_json = "1"

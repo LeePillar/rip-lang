@@ -1,0 +1,40 @@
+mod examples;
+
+use std::dev;
+
+func main() -> void {
+    // vec：提前定义同构 + 简写
+    let mut nums: vec<int> = [1, 4, 3];
+    nums.sort(func(a: int, b: int) -> int { return a - b; });
+    nums.push(5);
+    dev.log("nums.0 = " + nums.0.to_string());
+    dev.log("nums.at(1) = " + nums.at(1).unwrap_or(0).to_string());
+
+    // vec：提前定义同构 + 显式
+    let nums2: vec<int> = [:int = 1, :int = 2];
+    dev.log("nums2.len = " + nums2.len().to_string());
+
+    // vec：提前定义异构
+    let pair: vec<string, int> = ["a", 1];
+    dev.log("pair.0 = " + pair.0);
+
+    // vec：内部定义异构
+    let mixed: vec = [:int = 1, :string = "a", :bool = true];
+    dev.log("mixed.len = " + mixed.len().to_string());
+
+    // vec：倒序
+    let mut xs: vec<int> = [1, 2, 3];
+    xs.reverse();
+    dev.log("xs.0 = " + xs.0.to_string());     // 3
+
+    // map
+    let mut scores: map<string, int> = [];
+    scores.set("张三", 90);
+    scores.set("李四", 85);
+    dev.log("scores.len = " + scores.len().to_string());
+    dev.log("张三 = " + scores.get("张三").unwrap_or(0).to_string());
+
+    for k in scores.keys() {
+        dev.log(k + " = " + scores.get(k).unwrap_or(0).to_string());
+    }
+}

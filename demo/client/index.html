@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rip 用户管理 · Vue + Rip</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/vue.global.prod.js"></script>
+</head>
+<body>
+<div id="app" v-cloak>
+    <!-- 登录页 -->
+    <div class="login-wrap" v-if="view === 'login'">
+        <form class="login-card" @submit.prevent="submitLogin">
+            <div class="brand">
+                <span class="brand-mark">R</span>
+                <div>
+                    <h1>Rip 用户管理</h1>
+                    <p>Vue 3 前端 · Rip 后端 · std/db</p>
+                </div>
+            </div>
+
+            <label class="field">
+                <span>账号 / 邮箱</span>
+                <input v-model.trim="loginForm.account" autocomplete="username" placeholder="admin@example.com">
+            </label>
+            <label class="field">
+                <span>密码</span>
+                <input v-model="loginForm.password" type="password" autocomplete="current-password" placeholder="admin123">
+            </label>
+
+            <p class="error" v-if="loginError">{{ loginError }}</p>
+
+            <button class="btn primary block" type="submit" :disabled="busy">
+                {{ busy ? '登录中…' : '登 录' }}
+            </button>
+
+            <p class="hint">默认管理员：admin@example.com / admin123</p>
+        </form>
+    </div>
+
+    <!-- 登录后的用户管理 -->
+    <div class="app" v-else>
+        <header class="topbar">
+            <div class="brand small">
+                <span class="brand-mark">R</span>
+                <div>
+                    <h1>用户管理</h1>
+                    <p>Rip + Vue 3</p>
+                </div>
+            </div>
+            <div class="who">
+                <span class="avatar">{{ (me.name || me.email || '?').slice(0, 1) }}</span>
+                <div class="who-text">
+                    <strong>{{ me.name }}</strong>
+                    <small>{{ me.email }} · {{ roleLabel(me.role) }}</small>
+                </div>
+                <button class="btn ghost" @click="logout">退出</button>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="panel">
+                <div class="toolbar">
+                    <input class="search" v-model="keyword" @input="onSearch" placeholder="搜索姓名 / 邮箱 / 手机号">
+                    <select class="filter" v-model="statusFilter" @change="reload">
+                        <option value="">全部状态</option>
+                        <option value="active">正常</option>
+                        <option value="disabled">已禁用</option>
+                    </select>
+                    <button class="btn primary" @click="openCreate">新增用户</button>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>邮箱</th>
+                            <th>手机号</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th class="ops">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="user in users" :key="user.id">
+                            <td>{{ user.id }}</td>
+                            <td class="strong">{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.phone || '—' }}</td>
+                            <td><span class="tag" :class="user.role">{{ roleLabel(user.role) }}</span></td>
+                            <td><span class="dot" :class="user.status"></span>{{ statusLabel(user.status) }}</td>
+                            <td class="muted">{{ user.created_at }}</td>
+                            <td class="ops">
+                                <button class="btn link" @click="openEdit(user)">编辑</button>
+                                <button class="btn link danger" @click="removeUser(user)">删除</button>
+                            </td>
+                        </tr>
+                        <tr v-if="loading">
+                            <td colspan="8" class="empty">加载中…</td>
+                        </tr>
+                        <tr v-else-if="users.length === 0">
+                            <td colspan="8" class="empty">没有匹配的用户</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pager">
+                    <span class="muted">共 {{ total }} 条 · 第 {{ page }} / {{ totalPages }} 页</span>
+                    <div>
+                        <button class="btn ghost" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
+                        <button class="btn ghost" :disabled="page >= totalPages" @click="goPage(page + 1)">下一页</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 新增 / 编辑弹窗 -->
+        <div class="mask" v-if="form.open" @click.self="closeForm">
+            <form class="modal" @submit.prevent="saveUser">
+                <h2>{{ form.mode === 'create' ? '新增用户' : '编辑用户' }}</h2>
+                <label class="field">
+                    <span>姓名</span>
+                    <input v-model.trim="form.name" placeholder="至少 2 个字符">
+                </label>
+                <label class="field">
+                    <span>邮箱</span>
+                    <input v-model.trim="form.email" placeholder="name@example.com">
+                </label>
+                <label class="field">
+                    <span>手机号</span>
+                    <input v-model.trim="form.phone" placeholder="选填">
+                </label>
+                <label class="field">
+                    <span>{{ form.mode === 'create' ? '密码' : '重置密码（留空不修改）' }}</span>
+                    <input v-model="form.password" type="password" placeholder="至少 6 个字符">
+                </label>
+                <div class="row">
+                    <label class="field">
+                        <span>角色</span>
+                        <select v-model="form.role">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>状态</span>
+                        <select v-model="form.status">
+                            <option value="active">正常</option>
+                            <option value="disabled">已禁用</option>
+                        </select>
+                    </label>
+                </div>
+
+                <p class="error" v-if="form.error">{{ form.error }}</p>
+
+                <div class="modal-actions">
+                    <button class="btn ghost" type="button" @click="closeForm">取消</button>
+                    <button class="btn primary" type="submit" :disabled="busy">
+                        {{ busy ? '保存中…' : '保存' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="toast" v-if="toast">{{ toast }}</div>
+    </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+mod tests;
+
+use std::dev;
+
+func identity<T>(x: T) -> T {
+    return x;
+}
+
+func first<T>(read items: vec<T>) -> result<T, string> {
+    return items.at(0);
+}
+
+func pair<A, B>(a: A, b: B) -> vec<any> {
+    return [a, b];
+}
+
+#[test]
+func test_generic_infer() -> void {
+    let n: int = identity(1);
+    dev.assert(n == 1);
+    let s: string = identity("x");
+    dev.assert(s == "x");
+}
+
+#[test]
+func test_generic_explicit() -> void {
+    let s: string = identity<string>("a");
+    dev.assert(s == "a");
+    let v: vec<int> = [3, 4];
+    match first<int>(v) {
+        ok(x) => { dev.assert(x == 3); }
+        err(e) => { dev.assert(false); }
+    }
+    let p: vec<any> = pair<int, string>(1, "two");
+    dev.assert(p.len() == 2);
+}

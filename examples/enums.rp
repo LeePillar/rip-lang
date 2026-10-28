@@ -1,0 +1,101 @@
+mod examples;
+
+// 枚举 / ADT：变体构造、穷尽 match、递归枚举、JSON 序列化。
+
+use std::dev;
+use std::json;
+
+type status = enum {
+    active,
+    pending,
+    banned(reason: string),
+}
+
+type shape = enum {
+    circle(radius: float),
+    rect(width: float, height: float),
+    point,
+}
+
+/// 递归枚举：表达式树。
+type expr = enum {
+    lit(value: int),
+    neg(inner: expr),
+    add(left: expr, right: expr),
+}
+
+func describe(read s: shape) -> string {
+    match s {
+        shape.circle[radius: float] => { return "circle " + radius.to_string(); }
+        shape.rect[width: float, height: float] => {
+            return "rect " + width.to_string() + "x" + height.to_string();
+        }
+        shape.point => { return "point"; }
+    }
+}
+
+func is_blocked(read s: status) -> bool {
+    match s {
+        status.active => { return false; }
+        status.pending => { return false; }
+        status.banned[reason: string] => { return reason.len() > 0; }
+    }
+}
+
+/// 枚举也可以挂方法：`状态.blocked()`。
+func status.blocked(read s: status) -> bool {
+    match s {
+        status.active => { return false; }
+        status.pending => { return false; }
+        status.banned[reason: string] => { return reason.len() > 0; }
+    }
+}
+
+func eval(read e: expr) -> int {
+    match e {
+        expr.lit[value: int] => { return value; }
+        expr.neg[inner: expr] => { return 0 - eval(inner); }
+        expr.add[left: expr, right: expr] => { return eval(left) + eval(right); }
+    }
+}
+
+func main() -> void {
+    let state: status = status.pending;
+    dev.assert(!is_blocked(state));
+    dev.assert(is_blocked(status.banned[reason = "spam"]));
+    dev.assert(status.banned[reason = "spam"].blocked());
+    dev.assert(!state.blocked());
+    dev.assert(state == status.pending);
+    dev.assert(state != status.active);
+
+    // 枚举是 Move 类型：需要两份时用 .clone()。
+    let copy: status = status.banned[reason = "x"].clone();
+    dev.assert(copy == status.banned[reason = "x"]);
+
+    // 变体字段可以是任意类型；vec<枚举> 需要 match 读取。
+    let shapes: vec<shape> = [
+        shape.circle[radius = 2.0],
+        shape.rect[width = 3.0, height = 4.0],
+        shape.point
+    ];
+    let mut text: string = "";
+    for item in shapes {
+        text = text + describe(item) + ";";
+    }
+    dev.assert(text == "circle 2;rect 3x4;point;");
+
+    // 递归枚举：((1 + 2) * -3) 用 neg/add 表达。
+    let tree: expr = expr.add[
+        left = expr.lit[value = 1],
+        right = expr.neg[inner = expr.lit[value = 3]]
+    ];
+    dev.assert(eval(tree) == -2);
+    dev.assert(eval(expr.lit[value = 7]) == 7);
+
+    // JSON：枚举编码为 {"variant": "...", ...字段}。
+    let encoded: string = json.encode(status.banned[reason = "spam"]);
+    dev.assert(encoded.contains("\"variant\":\"banned\""));
+    dev.assert(encoded.contains("\"reason\":\"spam\""));
+
+    dev.log("enums ok");
+}

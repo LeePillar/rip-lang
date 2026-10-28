@@ -1,0 +1,118 @@
+mod examples;
+
+// std/sync：命名互斥锁、原子整数、通道（含超时）。
+// 单线程验证语义，再用 task.spawn 验证跨线程共享同一个命名原语。
+
+use std::dev;
+use std::sync;
+use std::task;
+
+/// 后台线程：用同名句柄拿到主线程创建的计数器与通道。
+func worker() -> void {
+    let mutex: sync.mutex = sync.mutex("sync_demo_worker_mutex");
+    let counter: sync.atomic = sync.atomic("sync_demo_worker_counter", 0);
+    let jobs: sync.channel = sync.channel("sync_demo_worker_jobs", 16);
+
+    let mut i: int = 0;
+    while i < 4 {
+        mutex.lock();
+        counter.add(1);
+        mutex.unlock();
+        jobs.send("job " + i.to_string());
+        i = i + 1;
+    }
+    jobs.close();
+}
+
+/// `parallel` 的每条语句是一个独立分支（各自没有外层局部变量），
+/// 用同名原子计数器汇总结果。
+func parallel_bump() -> void {
+    let start: sync.atomic = sync.atomic("sync_demo_parallel", 0);
+    start.store(0);
+    parallel {
+        sync.atomic("sync_demo_parallel", 0).add(1);
+        sync.atomic("sync_demo_parallel", 0).add(1);
+        sync.atomic("sync_demo_parallel", 0).add(1);
+    }
+    dev.assert(start.load() == 3);
+}
+
+func main() -> void {
+    // 互斥锁：同一时刻只有一个持有者；lock_timeout 返回是否拿到。
+    let mutex: sync.mutex = sync.mutex("sync_demo_mutex");
+    dev.assert(mutex.try_lock());
+    dev.assert(mutex.is_locked());
+    dev.assert(!mutex.try_lock());
+    mutex.unlock();
+    dev.assert(!mutex.is_locked());
+    dev.assert(mutex.lock_timeout(10));
+    mutex.unlock();
+
+    // 原子整数：add / sub / swap / compare_swap 都返回旧值或结果。
+    let counter: sync.atomic = sync.atomic("sync_demo_counter", 0);
+    dev.assert(counter.load() == 0);
+    dev.assert(counter.add(2) == 0);
+    dev.assert(counter.add(3) == 2);
+    dev.assert(counter.load() == 5);
+    dev.assert(counter.sub(1) == 5);
+    dev.assert(counter.swap(10) == 4);
+    dev.assert(counter.compare_swap(10, 20));
+    dev.assert(!counter.compare_swap(10, 30));
+    dev.assert(counter.load() == 20);
+
+    // 通道：有界队列，满时 try_send 返回 false，空时 try_recv 返回 none。
+    let ch: sync.channel = sync.channel("sync_demo_channel", 2);
+    dev.assert(ch.capacity() == 2);
+    ch.send("a");
+    ch.send(42);
+    dev.assert(ch.len() == 2);
+    dev.assert(!ch.try_send("overflow"));
+    match ch.try_recv() {
+        some(value) => { dev.assert(value.as_string().unwrap_or("") == "a"); }
+        none => { dev.assert(false); }
+    }
+    match ch.recv_timeout(10) {
+        some(value) => { dev.assert(value.as_int().unwrap_or(0) == 42); }
+        none => { dev.assert(false); }
+    }
+    dev.assert(ch.try_recv().is_none());
+    // 空且未关闭：超时返回 none，可用于“等一会再试”的轮询。
+    dev.assert(ch.recv_timeout(20).is_none());
+    ch.close();
+    dev.assert(ch.is_closed());
+    dev.assert(ch.recv_timeout(10).is_none());
+
+    // 跨线程：worker 用同名句柄写计数器、发消息。
+    let done: sync.atomic = sync.atomic("sync_demo_worker_counter", 0);
+    let jobs: sync.channel = sync.channel("sync_demo_worker_jobs", 16);
+    dev.assert(task.spawn("worker"));
+
+    let mut waited: int = 0;
+    while done.load() < 4 && waited < 5000 {
+        task.sleep(1);
+        waited = waited + 1;
+    }
+    dev.assert(done.load() == 4);
+
+    let mut received: int = 0;
+    let mut finished: bool = false;
+    while !finished {
+        match jobs.recv_timeout(1000) {
+            some(value) => {
+                let text: string = value.as_string().unwrap_or("");
+                dev.assert(text.starts_with("job "));
+                received = received + 1;
+            }
+            none => { finished = true; }
+        }
+    }
+    dev.assert(received == 4);
+
+    parallel_bump();
+
+    // 生命周期：常驻进程里按固定名字复用；测试或临时场景可以显式移除。
+    dev.assert(sync.remove("sync_demo_mutex"));
+    dev.assert(!sync.exists("sync_demo_mutex"));
+
+    dev.log("sync ok");
+}

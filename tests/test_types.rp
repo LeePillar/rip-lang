@@ -1,0 +1,24 @@
+mod tests;
+
+use std::dev;
+
+type address = [city: string, zip: string];
+type user = [id: int, name: string, flags: u8, address: address];
+
+func main() -> void {
+    let a: int = 42;
+    let b: i32 = 42i32;          // 后缀给出类型，前缀只表示进制
+    let c: u8 = 0b1010;
+    let d: u16 = 0o755;
+    let e: u32 = 0xFF;
+    dev.assert(a == b.to_int());
+    dev.assert(c.to_int() == 10);
+    dev.assert(d.to_int() == 493);
+    dev.assert(e.to_int() == 255);
+    dev.assert(a.to_string() == "42");
+    dev.assert('a'.len() == 1);
+
+    let u: user = [id = 1, name = "张三", flags = 0b1010, address = [city = "北京", zip = "100000"]];
+    dev.assert(u.name == "张三");
+    dev.assert(u.address.city == "北京");
+}

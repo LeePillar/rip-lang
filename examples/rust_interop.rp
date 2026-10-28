@@ -1,0 +1,15 @@
+mod examples;
+
+use rust::serde_json as json;
+use std::dev;
+
+type user = [id: int, name: string];
+
+func main() -> void {
+    let u: user = [id = 1, name = "张三"];
+    let encoded: result<string, string> = json.to_string(u);
+    match encoded {
+        ok(s) => { dev.log("json = " + s); }
+        err(e) => { dev.log("err: " + e); }
+    }
+}

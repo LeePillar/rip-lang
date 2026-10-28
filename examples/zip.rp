@@ -1,0 +1,91 @@
+﻿mod examples;
+
+// ZIP：创建、追加、列举、解压、按条目读取；拒绝 ../ 与绝对路径。
+
+use std::dev;
+use std::fs;
+use std::zip;
+
+func main() -> void {
+    let mut base: string = "";
+    match fs.temp_dir("rip_zip_") {
+        ok(path) => { base = path; }
+        err(message) => { dev.log(message); return; }
+    }
+    let archive: string = base + "/demo.zip";
+
+    let files: map<string, string> = [
+        "readme.txt" = "hello zip",
+        "docs/note.txt" = "nested entry"
+    ];
+    match zip.create(archive, files) {
+        ok(count) => { dev.assert(count == 2); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    match zip.list(archive) {
+        ok(entries) => {
+            dev.assert(entries.len() == 2);
+            for entry in entries {
+                dev.assert(!entry.is_dir);
+                dev.assert(entry.size > 0);
+                dev.assert(entry.compressed_size > 0);
+            }
+        }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    match zip.contains(archive, "docs/note.txt") {
+        ok(found) => { dev.assert(found); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match zip.read_text(archive, "docs/note.txt") {
+        ok(text) => { dev.assert(text == "nested entry"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 追加条目（同名条目以最后写入的为准）。
+    let extra: map<string, string> = ["extra.txt" = "added"];
+    match zip.add(archive, extra) {
+        ok(count) => { dev.assert(count == 1); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match zip.read_text(archive, "extra.txt") {
+        ok(text) => { dev.assert(text == "added"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 解压并校验目录结构。
+    match zip.extract(archive, base + "/out") {
+        ok(count) => { dev.assert(count == 3); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match fs.read_file(base + "/out/docs/note.txt") {
+        ok(text) => { dev.assert(text == "nested entry"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // zip-slip 防护：带 ../ 或绝对路径的条目直接拒绝。
+    let evil: map<string, string> = ["../evil.txt" = "x"];
+    match zip.create(base + "/evil.zip", evil) {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("unsafe")); }
+    }
+    let absolute: map<string, string> = ["/etc/passwd" = "x"];
+    match zip.create(base + "/evil2.zip", absolute) {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("relative")); }
+    }
+
+    // 不存在的条目返回 err。
+    match zip.read_text(archive, "missing.txt") {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("not found")); }
+    }
+
+    match fs.remove_dir(base) {
+        ok(_) => {}
+        err(message) => { dev.log(message); }
+    }
+    dev.log("zip ok");
+}

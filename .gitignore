@@ -1,0 +1,24 @@
+# 构建产物
+/target/
+/dist/
+*.pdb
+*.ilk
+
+# 本地临时
+.tmp/
+.screenshots/
+.trae-html-share-packages/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 系统
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 本地配置与凭据
+.env
+*.local.toml

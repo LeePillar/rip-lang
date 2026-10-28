@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rip 语言手册</title>
+<style>
+:root{
+  --bg:#ffffff;--panel:#f7f9fc;--text:#1f2328;--muted:#5b6572;--border:#e3e8ef;
+  --accent:#2563eb;--accent-soft:#eaf1ff;--code-bg:#f6f8fa;--mark:#fff3b0;
+  --kw:#cf222e;--ty:#953800;--st:#0a3069;--cm:#6e7781;--nm:#0550ae;--fn:#8250df;
+}
+html[data-theme="dark"]{
+  --bg:#0f141a;--panel:#141b24;--text:#e6edf3;--muted:#9aa7b4;--border:#263140;
+  --accent:#58a6ff;--accent-soft:#16283f;--code-bg:#0b1118;--mark:#5c4b00;
+  --kw:#ff7b72;--ty:#ffa657;--st:#a5d6ff;--cm:#8b949e;--nm:#79c0ff;--fn:#d2a8ff;
+}
+@media (prefers-color-scheme: dark){
+  html:not([data-theme="light"]){
+    --bg:#0f141a;--panel:#141b24;--text:#e6edf3;--muted:#9aa7b4;--border:#263140;
+    --accent:#58a6ff;--accent-soft:#16283f;--code-bg:#0b1118;--mark:#5c4b00;
+    --kw:#ff7b72;--ty:#ffa657;--st:#a5d6ff;--cm:#8b949e;--nm:#79c0ff;--fn:#d2a8ff;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre,kbd{font-family:"Cascadia Mono",Consolas,"JetBrains Mono",monospace}
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;
+  gap:12px;padding:0 16px;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:40}
+.brand{font-weight:650;font-size:15px;color:var(--text);white-space:nowrap}
+.brand:hover{text-decoration:none}
+.search-wrap{position:relative;flex:1;max-width:520px;margin-left:auto}
+#q{width:100%;height:34px;padding:0 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--panel);color:var(--text);font-size:13px;outline:none}
+#q:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+kbd{border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;
+  padding:0 5px;font-size:11px;color:var(--muted);background:var(--panel)}
+.results{position:absolute;top:46px;left:0;right:0;max-height:62vh;overflow:auto;
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;z-index:50}
+.result{display:block;padding:8px 10px;border-radius:8px;color:var(--text)}
+.result:hover,.result.active{background:var(--panel);text-decoration:none}
+.result .rt{font-weight:600;font-size:13px}
+.result .rp{font-size:12px;color:var(--muted)}
+.result b{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.empty{padding:10px;color:var(--muted);font-size:13px}
+.icon-btn,.menu-btn{border:1px solid var(--border);background:var(--panel);color:var(--text);
+  width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1}
+.menu-btn{display:none}
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:60}
+.sidebar{position:fixed;top:56px;bottom:0;left:0;width:288px;overflow:auto;
+  background:var(--panel);border-right:1px solid var(--border);padding:16px 12px 40px;z-index:30}
+.toc-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  margin:0 10px 10px}
+#toc{list-style:none;margin:0;padding:0}
+#toc li{margin:1px 0}
+#toc a{display:block;padding:5px 10px;border-radius:7px;color:var(--muted);font-size:13px;
+  line-height:1.45;border-left:2px solid transparent}
+#toc a:hover{background:var(--bg);color:var(--text);text-decoration:none}
+#toc a.lv3{padding-left:24px;font-size:12.5px}
+#toc a.active{background:var(--accent-soft);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.doc-links{margin-top:18px;border-top:1px solid var(--border);padding-top:12px}
+.doc-links a{display:block;font-size:12.5px;color:var(--muted);padding:4px 10px}
+.content{max-width:none;margin:0;padding:88px 32px 120px}
+.page{max-width:900px;margin:0 auto}
+@media (min-width:1001px){
+  .content{margin-left:288px}
+}
+.content h1{font-size:30px;line-height:1.3;margin:0 0 18px;letter-spacing:-.01em}
+.content h2{font-size:22px;margin:52px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.content h3{font-size:17px;margin:32px 0 10px}
+.content h4{font-size:15px;margin:22px 0 8px}
+.content h1,.content h2,.content h3,.content h4{scroll-margin-top:76px}
+.content p{margin:10px 0}
+.content ul,.content ol{margin:8px 0 14px;padding-left:24px}
+.content li{margin:5px 0}
+.content li>ul,.content li>ol{margin:4px 0}
+.content blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 8px 8px 0;color:var(--muted)}
+.content strong{font-weight:650}
+.content code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;
+  padding:1px 5px;font-size:12.5px;white-space:normal;overflow-wrap:anywhere}
+.content pre{margin:0;padding:14px 16px;overflow:auto;background:var(--code-bg);
+  border-radius:10px;border:1px solid var(--border);font-size:12.8px;line-height:1.65}
+.content pre code{background:none;border:0;padding:0;white-space:pre;font-size:inherit}
+.code-block{position:relative;margin:14px 0}
+.copy{position:absolute;top:8px;right:8px;padding:3px 9px;font-size:11px;
+  border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--muted);
+  cursor:pointer;opacity:0;transition:opacity .15s}
+.code-block:hover .copy{opacity:1}
+.copy.done{color:var(--accent);border-color:var(--accent)}
+@media (hover:none){.copy{opacity:1}}
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:10px}
+.content table{border-collapse:collapse;width:100%;font-size:13px}
+.content th,.content td{padding:8px 12px;border-bottom:1px solid var(--border);
+  text-align:left;vertical-align:top}
+.content th{background:var(--panel);font-weight:600;white-space:nowrap}
+.content tbody tr:last-child td{border-bottom:0}
+.content tbody tr:hover{background:color-mix(in srgb,var(--panel) 60%,transparent)}
+.content td code{white-space:normal}
+.anchor{margin-left:8px;color:var(--muted);opacity:0;font-weight:400;font-size:.8em;
+  user-select:none}
+.anchor::before{content:"#"}
+h1:hover .anchor,h2:hover .anchor,h3:hover .anchor,h4:hover .anchor{opacity:.7}
+.kw{color:var(--kw)}.ty{color:var(--ty)}.st{color:var(--st)}.cm{color:var(--cm);
+  font-style:italic}.nm{color:var(--nm)}.fn{color:var(--fn)}.an{color:var(--ty);font-weight:600}
+.to-top{position:fixed;right:22px;bottom:22px;width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;
+  display:none;z-index:35;font-size:16px}
+.to-top.show{display:block}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.flash{animation:flash 1.1s ease}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+@media (max-width:1000px){
+  .menu-btn{display:block}
+  .sidebar{transform:translateX(-100%);transition:transform .2s ease;width:300px;
+    box-shadow:0 12px 40px rgba(0,0,0,.2)}
+  .sidebar.open{transform:none}
+  .content{padding:84px 20px 100px}
+  .brand{max-width:38vw;overflow:hidden;text-overflow:ellipsis}
+}
+@media print{
+  .topbar,.sidebar,.to-top,.copy,.progress{display:none!important}
+  .content{padding:0;max-width:none}
+  body{font-size:11pt}
+  a{color:inherit}
+}
+</style>
+</head>
+<body id="top">
+<div class="progress" id="progress"></div>
+<header class="topbar">
+  <button class="menu-btn" id="menu" aria-label="目录">☰</button>
+  <a class="brand" href="#top">Rip 语言手册</a>
+  <div class="search-wrap">
+    <input id="q" type="search" placeholder="搜索标题或内容（按 / 聚焦）" autocomplete="off" spellcheck="false">
+    <div class="results" id="results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme" title="切换深浅色">◐</button>
+</header>
+<nav class="sidebar" id="sidebar">
+  <div class="toc-title">目录</div>
+  <ul id="toc"></ul>
+  <div class="doc-links">
+    <a href="RipLang-help.html">Rip 语言手册</a>
+    <a href="RipLang-level.html">Rip 语言开发规范</a>
+  </div>
+</nav>
+<main class="content" id="content">
+<div class="page">
+<h1 id="Rip-语言手册">Rip 语言手册<a class="anchor" href="#Rip-语言手册" aria-hidden="true"></a></h1><p>Rip 是强类型、全显式、面向服务端的语言。这份手册只讲<strong>怎么写、怎么用、怎么发布</strong>，按「变量 → 语法 → 组件 → 项目 → 命令」的顺序组织，可以直接当速查表使用。</p><blockquote>页面右上角搜索框支持搜标题与正文（按 <code>/</code> 聚焦）。左侧目录会随滚动高亮。代码块右上角可一键复制。</blockquote><h2 id="1-五分钟上手">1. 五分钟上手<a class="anchor" href="#1-五分钟上手" aria-hidden="true"></a></h2><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> version                    <span class="cm"># 确认工具链可用</span>
+<span class="kw">rip</span> new shop --template http   <span class="cm"># 生成项目骨架</span>
+<span class="kw">cd</span> shop
+<span class="kw">rip</span> run main.rp                <span class="cm"># 启动服务：http://127.0.0.1:8080/</span>
+<span class="kw">rip</span> check main.rp              <span class="cm"># 只做静态检查</span>
+<span class="kw">rip</span> build main.rp              <span class="cm"># 编译原生二进制到 dist/</span></code></pre></div><p><code>rip new</code> 生成的项目结构：</p><div class="code-block"><pre><code class="lang-text">shop/
+├── rip.toml      # 项目清单（名称、版本、入口、服务端参数）
+├── main.rp       # 入口，必须含 func main() -&gt; void
+└── .gitignore</code></pre></div><p>最小的 HTTP 服务：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> shop;
+
+<span class="kw">use</span> std::http;
+
+<span class="an">#[get("/")]</span>
+<span class="kw">func</span> <span class="fn">index</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [message = <span class="st">"Hello, Rip!"</span>]];
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> routes: <span class="ty">vec</span>&lt;http.route&gt; = [];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(routes));
+}</code></pre></div><p>记住六条规则：</p><div class="table-wrap"><table><thead><tr><th style="text-align:left">规则</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">唯一写法</td><td style="text-align:left">同一语义只有一种语法，没有别名写法</td></tr><tr><td style="text-align:left">类型全显式</td><td style="text-align:left">变量、参数、返回值、字段、容器元素都要写类型</td></tr><tr><td style="text-align:left">语句以 ; 结尾</td><td style="text-align:left">块和函数声明不加</td></tr><tr><td style="text-align:left">循环四种</td><td style="text-align:left">loop / while / while let / for ... in，规则同 Rust</td></tr><tr><td style="text-align:left">没有 class</td><td style="text-align:left">用 ary（固定字段结构）+ 自由函数</td></tr><tr><td style="text-align:left">没有推断</td><td style="text-align:left">没有 :=，没有省略参数类型</td></tr></tbody></table></div><h2 id="2-变量怎么定义">2. 变量怎么定义<a class="anchor" href="#2-变量怎么定义" aria-hidden="true"></a></h2><p>四种绑定，全部写在语句里，类型必须显式：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> name: <span class="ty">string</span> = <span class="st">"rip"</span>;        <span class="cm">// 不可变</span>
+<span class="kw">let</span> <span class="kw">mut</span> count: <span class="ty">int</span> = <span class="nm">0</span>;          <span class="cm">// 可变</span>
+<span class="kw">const</span> MAX: <span class="ty">int</span> = <span class="nm">1024</span>;           <span class="cm">// 模块级编译期常量</span>
+<span class="kw">static</span> APP: <span class="ty">string</span> = <span class="st">"shop"</span>;     <span class="cm">// 模块级静态值（启动时初始化）</span></code></pre></div><p>规则：</p><ul><li><code>let</code> 绑定后不能重新赋值；要改变量用 <code>let mut</code>。</li><li><code>const</code> / <code>static</code> 只能写在模块级（函数外），都不可重新赋值，也没有 <code>static mut</code>。</li><li>同一作用域禁止同名变量（无 shadowing）。</li><li>修改 <code>ary</code> 字段、调用 <code>push</code> / <code>set</code> 等修改容器的方法，根变量必须是 <code>let mut</code>。</li><li>命名：变量/函数/类型 <code>snake_case</code>，常量/静态 <code>SCREAMING_SNAKE_CASE</code>。</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> total: <span class="ty">int</span> = <span class="nm">0</span>;
+total = total + <span class="nm">1</span>;      <span class="cm">// 合法</span>
+
+<span class="kw">let</span> fixed: <span class="ty">int</span> = <span class="nm">10</span>;
+<span class="cm">// fixed = 11;          // 编译错误：不可变</span></code></pre></div><h3 id="21-类型一览">2.1 类型一览<a class="anchor" href="#21-类型一览" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">类型</th><th style="text-align:left">写法</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">整数</td><td style="text-align:left">int（= i64）/ i8 / i16 / i32 / i64</td><td style="text-align:left">默认 int；位宽类型与 Rust 一致</td></tr><tr><td style="text-align:left">无符号整数</td><td style="text-align:left">u8 / u16 / u32 / u64</td><td style="text-align:left">与 Rust 同语义</td></tr><tr><td style="text-align:left">浮点</td><td style="text-align:left">float</td><td style="text-align:left">64 位</td></tr><tr><td style="text-align:left">字符串</td><td style="text-align:left">string</td><td style="text-align:left">UTF-8 不可变；单引号表示单字符</td></tr><tr><td style="text-align:left">布尔</td><td style="text-align:left">bool</td><td style="text-align:left">true / false</td></tr><tr><td style="text-align:left">结构</td><td style="text-align:left">[id: int, name: string]</td><td style="text-align:left">ary，字段固定</td></tr><tr><td style="text-align:left">序列</td><td style="text-align:left">vec&lt;T&gt;</td><td style="text-align:left">有序，下标从 0 开始</td></tr><tr><td style="text-align:left">字典</td><td style="text-align:left">map&lt;K, V&gt;</td><td style="text-align:left">动态键值</td></tr><tr><td style="text-align:left">可空</td><td style="text-align:left">option&lt;T&gt;</td><td style="text-align:left">some(x) / none</td></tr><tr><td style="text-align:left">结果</td><td style="text-align:left">result&lt;T, E&gt;</td><td style="text-align:left">ok(x) / err(e)</td></tr><tr><td style="text-align:left">任意</td><td style="text-align:left">any</td><td style="text-align:left">只在 JSON / 动态字典边界使用</td></tr></tbody></table></div><p>不同整数类型之间必须显式转换：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> a: <span class="ty">u32</span> = <span class="nm">0xFF</span>;
+<span class="kw">let</span> b: <span class="ty">int</span> = a.<span class="fn">to_int</span>();
+<span class="kw">let</span> c: <span class="ty">u8</span> = b.<span class="fn">to_u8</span>();</code></pre></div><p>前缀只表示进制（<code>0x</code> / <code>0o</code> / <code>0b</code>），类型用后缀（<code>42i32</code>、<code>7u8</code>）；不带后缀的整数是 <code>int</code>，小数是 <code>float</code>。</p><h3 id="22-三种数据结构">2.2 三种数据结构<a class="anchor" href="#22-三种数据结构" aria-hidden="true"></a></h3><p><strong>ary：固定字段结构</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> address = [city: <span class="ty">string</span>, zip: <span class="ty">string</span>];
+<span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>, address: address];
+
+<span class="kw">let</span> <span class="kw">mut</span> u: user = [
+    id = <span class="nm">1</span>,
+    name = <span class="st">"张三"</span>,
+    address = [city = <span class="st">"北京"</span>, zip = <span class="st">"100000"</span>]
+];
+
+u.name;                 <span class="cm">// 读</span>
+u.address.city;         <span class="cm">// 嵌套读</span>
+u.name = <span class="st">"李四"</span>;         <span class="cm">// 写，u 必须是 let mut</span></code></pre></div><p>字段用点号访问，禁止 <code>u["name"]</code>、<code>u[0]</code>；字段集合编译期固定。</p><p><strong>vec：有序序列</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> nums: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>];
+<span class="kw">let</span> empty: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [];
+<span class="kw">let</span> mixed: <span class="ty">vec</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [<span class="st">"a"</span>, <span class="nm">1</span>];   <span class="cm">// 定长异构，只读</span>
+
+nums.<span class="nm">0</span>;        <span class="cm">// 编译期常量下标</span>
+nums.<span class="fn">at</span>(<span class="nm">1</span>);    <span class="cm">// 运行时下标，返回 result&lt;int, string&gt;</span>
+nums.<span class="fn">len</span>();</code></pre></div><p>禁止 <code>nums[0]</code>；要按下标取用 <code>.0</code>（常量）或 <code>.at(i)</code>（运行时）。</p><p><strong>map：动态字典</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> scores: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [];
+scores.<span class="fn">set</span>(<span class="st">"张三"</span>, <span class="nm">90</span>);
+scores.<span class="fn">get</span>(<span class="st">"张三"</span>);     <span class="cm">// option&lt;int&gt;</span>
+scores.<span class="fn">has</span>(<span class="st">"张三"</span>);     <span class="cm">// bool</span>
+scores.<span class="fn">delete</span>(<span class="st">"张三"</span>);  <span class="cm">// option&lt;int&gt;</span>
+
+<span class="kw">let</span> config: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt; = [<span class="st">"name"</span> = <span class="st">"shop"</span>, <span class="st">"city"</span> = <span class="st">"北京"</span>];</code></pre></div><p>禁止 <code>scores["张三"]</code>，统一用 <code>.get</code> / <code>.set</code> / <code>.has</code> / <code>.delete</code>。</p><p>三者的选择：字段固定用 <code>ary</code>，有序索引用 <code>vec</code>，动态键用 <code>map</code>，不做隐式互转。</p><h3 id="23-option-与-result">2.3 option 与 result<a class="anchor" href="#23-option-与-result" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> found: <span class="ty">option</span>&lt;<span class="ty">int</span>&gt; = <span class="kw">some</span>(<span class="nm">1</span>);
+<span class="kw">let</span> missing: <span class="ty">option</span>&lt;<span class="ty">int</span>&gt; = <span class="kw">none</span>;
+
+<span class="kw">let</span> ok_value: <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt; = <span class="kw">ok</span>(<span class="nm">1</span>);
+<span class="kw">let</span> bad_value: <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt; = <span class="kw">err</span>(<span class="st">"boom"</span>);</code></pre></div><ul><li><code>option&lt;T&gt;</code>：<code>.unwrap_or(x)</code>、<code>.unwrap()</code>、<code>.is_some()</code>、<code>.is_none()</code>。</li><li><code>result&lt;T, E&gt;</code>：<code>.unwrap_or(x)</code>、<code>.unwrap()</code>、<code>.unwrap_err()</code>、<code>.is_ok()</code>、<code>.is_err()</code>。</li></ul><h3 id="24-命名类型与递归类型">2.4 命名类型与递归类型<a class="anchor" href="#24-命名类型与递归类型" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>, tags: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt;];
+<span class="kw">type</span> node = [value: <span class="ty">int</span>, children: <span class="ty">vec</span>&lt;node&gt;];   <span class="cm">// 递归：经 vec 间接自引用</span></code></pre></div><ul><li>类型定义运行期不可修改，同文件类型名唯一。</li><li>递归类型必须经 <code>vec</code> / <code>option</code> / <code>map</code> 等容器间接引用；纯别名环（<code>type a = b; type b = a;</code>）直接报错。</li></ul><h3 id="25-泛型函数">2.5 泛型函数<a class="anchor" href="#25-泛型函数" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">identity</span>&lt;T&gt;(x: T) -&gt; T {
+    <span class="kw">return</span> x;
+}
+
+<span class="kw">func</span> <span class="fn">size</span>&lt;T&gt;(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;T&gt;) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> items.<span class="fn">len</span>();
+}
+
+<span class="kw">let</span> n: <span class="ty">int</span> = <span class="fn">identity</span>(<span class="nm">1</span>);              <span class="cm">// 从实参推断</span>
+<span class="kw">let</span> s: <span class="ty">string</span> = <span class="fn">identity</span>&lt;<span class="ty">string</span>&gt;(<span class="st">"a"</span>); <span class="cm">// 显式类型实参（推断不出时用）</span>
+
+<span class="cm">// 约束：S 必须实现 shape，函数体内可以调用接口方法</span>
+<span class="kw">func</span> <span class="fn">total_area</span>&lt;S: shape&gt;(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;S&gt;) -&gt; <span class="ty">float</span> {
+    <span class="kw">let</span> <span class="kw">mut</span> sum: <span class="ty">float</span> = <span class="nm">0.0</span>;
+    <span class="kw">for</span> item <span class="kw">in</span> items {
+        sum = sum + item.<span class="fn">area</span>();
+    }
+    <span class="kw">return</span> sum;
+}</code></pre></div><ul><li>类型实参可以省略（从实参推断），也可以显式写 <code>f&lt;T&gt;(...)</code>；显式写法必须写全。</li><li><code>&lt;T: 接口名&gt;</code> 的约束决定函数体能调用哪些方法；没有约束的 T 只能整体传递。</li><li>运行时类型擦除，只保留一份实现；<code>rip run</code> 与 <code>rip build</code> 的 AOT 产物行为一致。</li></ul><h3 id="26-Copy-与-Move">2.6 Copy 与 Move<a class="anchor" href="#26-Copy-与-Move" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">类型</th><th style="text-align:left">语义</th></tr></thead><tbody><tr><td style="text-align:left">int* / float / bool</td><td style="text-align:left">Copy，赋值与传参自动复制</td></tr><tr><td style="text-align:left">string / ary / vec / map / 闭包</td><td style="text-align:left">Move，赋值或按值传参后原变量失效</td></tr></tbody></table></div><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> a: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [<span class="nm">1</span>, <span class="nm">2</span>];
+<span class="kw">let</span> b: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = a;        <span class="cm">// a 被 move，此后不能再用 a</span>
+<span class="kw">let</span> c: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = b.<span class="fn">clone</span>(); <span class="cm">// 需要两份时就 clone</span></code></pre></div><p>函数参数默认是「Copy / Move」；不想交出所有权时写 <code>read</code>：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">total</span>(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt;) -&gt; <span class="ty">int</span> {   <span class="cm">// 只读借用，调用方保留 items</span>
+    <span class="kw">return</span> <span class="ty">vec</span>.<span class="fn">sum</span>(items);
+}
+
+<span class="kw">func</span> <span class="fn">add_one</span>(<span class="kw">write</span> counter: <span class="ty">int</span>) -&gt; <span class="ty">void</span> {  <span class="cm">// 可写借用，实参必须是 let mut</span>
+    counter = counter + <span class="nm">1</span>;
+}</code></pre></div><h3 id="27-枚举adt">2.7 枚举（ADT）<a class="anchor" href="#27-枚举adt" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> status = <span class="kw">enum</span> {
+    active,
+    pending,
+    banned(reason: <span class="ty">string</span>),
+}
+
+<span class="kw">let</span> s: status = status.active;
+<span class="kw">let</span> b: status = status.banned[reason = <span class="st">"spam"</span>];</code></pre></div><ul><li>变体用 <code>,</code> 分隔；无字段只写名字，有字段写 <code>名字(字段: 类型, ...)</code>。</li><li>构造：<code>枚举.变体</code> / <code>枚举.变体[字段 = 值]</code>，字段必须写全、类型必须匹配。</li><li>枚举是 Move 类型；需要两份时用 <code>.clone()</code>。</li><li>枚举可以挂方法：<code>func status.blocked(read s: status) -&gt; bool</code>，调用 <code>s.blocked()</code>。</li><li>枚举值不能直接取字段（<code>s.reason</code> 报错），必须用 <code>match</code> 解构。</li><li>JSON 序列化为 <code>{"variant": "banned", "reason": "spam"}</code>。</li></ul><h2 id="3-语法与控制流怎么用">3. 语法与控制流怎么用<a class="anchor" href="#3-语法与控制流怎么用" aria-hidden="true"></a></h2><h3 id="31-运算符">3.1 运算符<a class="anchor" href="#31-运算符" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-text">+  -  *  /  %       算术（同类型，结果同类型；零除 panic）
+== != &gt; &gt;= &lt; &lt;=     比较（同类型，返回 bool）
+&amp;&amp; || !             逻辑（短路）
++                   字符串拼接（两侧都是 string）</code></pre></div><p>优先级从低到高：<code>||</code> → <code>&amp;&amp;</code> → 比较 → <code>+ -</code> → <code>* / %</code> → 一元 <code>! -</code>。</p><h3 id="32-if">3.2 if<a class="anchor" href="#32-if" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">if</span> score &gt;= <span class="nm">90</span> {
+    <span class="fn">print</span>(<span class="st">"A"</span>);
+} <span class="kw">else</span> <span class="kw">if</span> score &gt;= <span class="nm">80</span> {
+    <span class="fn">print</span>(<span class="st">"B"</span>);
+} <span class="kw">else</span> {
+    <span class="fn">print</span>(<span class="st">"C"</span>);
+}</code></pre></div><p>条件必须是 <code>bool</code>（没有 truthy/falsy）；括号可省略，分支必须用花括号。</p><h3 id="33-循环四种写法">3.3 循环：四种写法（规则同 Rust）<a class="anchor" href="#33-循环四种写法" aria-hidden="true"></a></h3><p>循环只有这四种，按场景挑一种写，不和别的语法叠加。</p><div class="code-block"><pre><code class="lang-rp"><span class="cm">// while：条件成立就继续，最常用的计数 / 条件循环</span>
+<span class="kw">let</span> <span class="kw">mut</span> count: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">while</span> count &lt; <span class="nm">10</span> {
+    <span class="fn">print</span>(count.<span class="fn">to_string</span>());
+    count = count + <span class="nm">1</span>;
+}
+
+<span class="cm">// loop：一直循环，退出条件写在循环体里</span>
+<span class="kw">let</span> <span class="kw">mut</span> i: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">loop</span> {
+    <span class="kw">if</span> i &gt;= <span class="nm">10</span> { <span class="kw">break</span>; }
+    <span class="fn">print</span>(i.<span class="fn">to_string</span>());
+    i = i + <span class="nm">1</span>;
+}
+
+<span class="cm">// for ... in：遍历 vec（得到元素）或 map（得到 key）</span>
+<span class="kw">let</span> tags: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; = [<span class="st">"a"</span>, <span class="st">"b"</span>];
+<span class="kw">for</span> tag <span class="kw">in</span> tags {
+    <span class="fn">print</span>(tag);
+}
+
+<span class="kw">let</span> <span class="kw">mut</span> scores: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [<span class="st">"math"</span> = <span class="nm">90</span>];
+<span class="kw">for</span> key <span class="kw">in</span> scores {          <span class="cm">// key: string</span>
+    <span class="fn">print</span>(key);
+}
+
+<span class="cm">// while let：每轮取一个值并匹配模式，取不到就结束</span>
+<span class="kw">while</span> <span class="kw">let</span> <span class="kw">some</span>(value) = cache.<span class="fn">get</span>(<span class="st">"key"</span>) =&gt; {
+    <span class="fn">print</span>(value);
+    cache.<span class="fn">delete</span>(<span class="st">"key"</span>);       <span class="cm">// 删掉后下一轮 get 返回 none，循环结束</span>
+}</code></pre></div><p><strong>break / continue</strong>（四种循环通用，只作用于最内层）：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> k: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">while</span> k &lt; <span class="nm">10</span> {
+    k = k + <span class="nm">1</span>;
+    <span class="kw">if</span> k == <span class="nm">2</span> { <span class="kw">continue</span>; }    <span class="cm">// 跳过本次，回到条件判断</span>
+    <span class="kw">if</span> k == <span class="nm">5</span> { <span class="kw">break</span>; }       <span class="cm">// 直接结束循环</span>
+    <span class="fn">print</span>(k.<span class="fn">to_string</span>());
+}</code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">场景</th><th style="text-align:left">用哪种</th><th style="text-align:left">写法</th></tr></thead><tbody><tr><td style="text-align:left">次数固定 / 计数</td><td style="text-align:left">while</td><td style="text-align:left"><code>while i &lt; n { ...; i = i + 1; }</code></td></tr><tr><td style="text-align:left">退出条件在中间</td><td style="text-align:left">loop</td><td style="text-align:left"><code>loop { ... if done { break; } }</code></td></tr><tr><td style="text-align:left">遍历 vec / map</td><td style="text-align:left">for ... in</td><td style="text-align:left"><code>for x in xs { ... }</code></td></tr><tr><td style="text-align:left">反复取可空值到取空</td><td style="text-align:left">while let</td><td style="text-align:left"><code>while let some(v) = next() =&gt; { ... }</code></td></tr></tbody></table></div><ul><li>循环条件必须是 <code>bool</code>，没有 truthy / falsy。</li><li>没有 <code>do-while</code>，也没有 C 风格三段式 <code>for</code>；条件循环直接写 <code>while</code>。</li><li><code>while let</code> 里 <code>=</code> 绑定模式、<code>=&gt;</code> 引出循环体（<code>=&gt;</code> 全语言只有 <code>match</code> 分支和这里两处）。</li><li><code>while let</code> 常用于 <code>cache.get</code>、<code>map.delete</code> 这类返回 <code>option</code> 的调用。</li></ul><h3 id="34-match">3.4 match<a class="anchor" href="#34-match" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> opt {
+    <span class="kw">some</span>(v) =&gt; { <span class="fn">print</span>(v.<span class="fn">to_string</span>()); }
+    <span class="kw">none</span> =&gt; { <span class="fn">print</span>(<span class="st">"empty"</span>); }
+}
+
+<span class="kw">match</span> res {
+    <span class="kw">ok</span>(v) =&gt; { <span class="fn">print</span>(v.<span class="fn">to_string</span>()); }
+    <span class="kw">err</span>(e) =&gt; { <span class="fn">print</span>(<span class="st">"error: "</span> + e); }
+}</code></pre></div><ul><li>分支用 <code>=&gt;</code>（左边匹配 → 右边执行）；<code>=</code> 只用于绑定与赋值；分支体必须用花括号。</li><li><code>option</code> 必须同时覆盖 <code>some</code> / <code>none</code>，<code>result</code> 必须覆盖 <code>ok</code> / <code>err</code>，缺分支是编译错误。</li><li>解构结构体：</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> user {
+    [id: <span class="ty">int</span>, name: <span class="ty">string</span>, address: _] =&gt; {
+        <span class="fn">print</span>(name);
+    }
+}</code></pre></div><p>枚举必须覆盖所有变体：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> state {
+    status.active =&gt; { <span class="fn">print</span>(<span class="st">"ok"</span>); }
+    status.pending =&gt; { <span class="fn">print</span>(<span class="st">"wait"</span>); }
+    status.banned[reason: <span class="ty">string</span>] =&gt; { <span class="fn">print</span>(reason); }
+}</code></pre></div><ul><li>枚举模式写成 <code>枚举名.变体</code>；带字段的变体用 <code>[字段: 类型, ...]</code> 绑定字段（<code>_</code> 不绑定）。</li><li>少写任一变体都是编译错误：<code>match on enum 'status' must cover variant 'banned'</code>。</li></ul><h3 id="35-把错误往上抛">3.5 <code>?</code>：把错误往上抛<a class="anchor" href="#35-把错误往上抛" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">read_config</span>(path: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> content: <span class="ty">string</span> = fs.<span class="fn">read_file</span>(path)?;
+    <span class="kw">return</span> <span class="kw">ok</span>(content);
+}</code></pre></div><p><code>?</code> 只能用于返回 <code>result</code> 的函数；遇到 <code>err</code> 立即返回，遇到 <code>ok</code> 取出值继续。非 <code>result</code> 函数里使用 <code>?</code> 是编译错误。</p><h3 id="36-函数定义与调用">3.6 函数定义与调用<a class="anchor" href="#36-函数定义与调用" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">add</span>(a: <span class="ty">int</span>, b: <span class="ty">int</span>) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> a + b;
+}
+
+<span class="kw">func</span> <span class="fn">log_message</span>(msg: <span class="ty">string</span>) -&gt; <span class="ty">void</span> {
+    <span class="fn">print</span>(msg);
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> sum: <span class="ty">int</span> = <span class="fn">add</span>(<span class="nm">1</span>, <span class="nm">2</span>);
+    <span class="fn">log_message</span>(<span class="st">"sum="</span> + sum.<span class="fn">to_string</span>());
+}</code></pre></div><ul><li>每个参数写 <code>名字: 类型</code>，必须写返回类型，没有返回值写 <code>-&gt; void</code>。</li><li>不支持重载、默认参数、可变参数。</li><li>函数可以定义在 <code>main</code> 之后，运行前统一注册。</li></ul><p><strong>可见性</strong>：<code>self func</code> 只在同包（同目录）内可见；<code>pub func</code> / <code>pub type</code> 导出给其他包。不加修饰符的函数保持全局可见。</p><p><strong>闭包</strong>：参数与返回类型必须写，类型必须显式：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> double: <span class="kw">func</span>(<span class="ty">int</span>) -&gt; <span class="ty">int</span> = <span class="kw">func</span>(x: <span class="ty">int</span>) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> x * <span class="nm">2</span>;
+};</code></pre></div><p><strong>三种调用形式</strong>（记住这三条就能调用一切）：</p><div class="code-block"><pre><code class="lang-rp"><span class="fn">add</span>(<span class="nm">1</span>, <span class="nm">2</span>)                    <span class="cm">// 1. 普通函数：直接写名字</span>
+http.<span class="fn">serve</span>(<span class="nm">8080</span>, handler)    <span class="cm">// 2. 标准库：use 后用「别名.函数」</span>
+items.<span class="fn">push</span>(<span class="nm">3</span>)                <span class="cm">// 3. 值的方法：值.方法()</span></code></pre></div><p>标准库导入可改别名：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;
+<span class="kw">use</span> std::sys <span class="kw">as</span> sys;
+<span class="kw">use</span> rust::serde_json <span class="kw">as</span> json;</code></pre></div><h3 id="37-注解写在函数上方">3.7 注解（写在函数上方）<a class="anchor" href="#37-注解写在函数上方" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">注解</th><th style="text-align:left">作用</th><th style="text-align:left">示例</th></tr></thead><tbody><tr><td style="text-align:left">#[get("/path")] 等</td><td style="text-align:left">注册 HTTP 路由</td><td style="text-align:left">#[post("/users")]</td></tr><tr><td style="text-align:left">#[interval("5m")]</td><td style="text-align:left">定时任务</td><td style="text-align:left">间隔用 ms / s / m / h / d</td></tr><tr><td style="text-align:left">#[test]</td><td style="text-align:left">测试函数，rip test 执行</td><td style="text-align:left">无参数、无入参、返回 void</td></tr><tr><td style="text-align:left">#[bench]</td><td style="text-align:left">基准函数，rip bench 执行</td><td style="text-align:left">无参数、无入参、返回 void</td></tr></tbody></table></div><p>路由处理函数签名固定为 <code>func(read req: http.request) -&gt; http.response</code>。</p><h3 id="38-方法与接口">3.8 方法与接口<a class="anchor" href="#38-方法与接口" aria-hidden="true"></a></h3><p>给类型加方法：<code>func 类型.方法(接收者, ...)</code>，接收者写 <code>read</code>（只读）或 <code>write</code>（可修改）。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>];
+
+<span class="kw">func</span> user.<span class="fn">display</span>(<span class="kw">read</span> u: user) -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> u.name;
+}
+
+<span class="kw">func</span> user.<span class="fn">rename</span>(<span class="kw">write</span> u: user, name: <span class="ty">string</span>) -&gt; <span class="ty">void</span> {
+    u.name = name;
+}
+
+<span class="kw">let</span> <span class="kw">mut</span> u: user = [id = <span class="nm">1</span>, name = <span class="st">"张三"</span>];
+<span class="fn">print</span>(u.<span class="fn">display</span>());
+u.<span class="fn">rename</span>(<span class="st">"李四"</span>);</code></pre></div><ul><li>调用就是 <code>u.display()</code>，不需要额外语法。</li><li><code>write</code> 方法只能对 <code>let mut</code> 变量调用。</li><li>方法名在类型内唯一；完整名字是 <code>user.display</code>。</li></ul><p><strong>接口</strong>：声明一组方法，任何类型只要实现这些方法就能当接口用。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> shape = <span class="kw">interface</span> {
+    <span class="kw">func</span> <span class="fn">area</span>() -&gt; <span class="ty">float</span>
+    <span class="kw">write</span> <span class="kw">func</span> <span class="fn">scale</span>(factor: <span class="ty">float</span>) -&gt; <span class="ty">void</span>
+}
+
+<span class="kw">type</span> circle = [radius: <span class="ty">float</span>];
+
+<span class="kw">func</span> circle.<span class="fn">area</span>(<span class="kw">read</span> c: circle) -&gt; <span class="ty">float</span> {
+    <span class="kw">return</span> <span class="nm">3.0</span> * c.radius * c.radius;
+}
+
+<span class="kw">func</span> circle.<span class="fn">scale</span>(<span class="kw">write</span> c: circle, factor: <span class="ty">float</span>) -&gt; <span class="ty">void</span> {
+    c.radius = c.radius * factor;
+}
+
+<span class="kw">let</span> shapes: <span class="ty">vec</span>&lt;shape&gt; = [circle[radius = <span class="nm">1.0</span>]];
+<span class="kw">for</span> s <span class="kw">in</span> shapes {
+    <span class="fn">print</span>(s.<span class="fn">area</span>().<span class="fn">to_string</span>());
+}</code></pre></div><ul><li>不用写 implements：方法名、参数、返回类型一致就自动实现接口。</li><li>接口能放进 <code>vec</code>、作为参数 / 返回值；调用时自动按真实类型找方法。</li><li>接口值用命名构造器创建（<code>circle[radius = 1.0]</code>），运行时据此记录类型。</li></ul><h3 id="39-defer-资源释放">3.9 defer：函数退出时清理<a class="anchor" href="#39-defer-资源释放" aria-hidden="true"></a></h3><p><code>defer 调用;</code> 把一次调用推迟到<strong>当前函数退出时</strong>执行，用来关连接、解锁、删临时文件。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">save</span>(path: <span class="ty">string</span>, text: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">void</span>, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> f: file = fs.<span class="fn">open</span>(path)?;
+    <span class="kw">defer</span> f.<span class="fn">close</span>();            <span class="cm">// 实参在 defer 处就地求值</span>
+    f.<span class="fn">write</span>(text)?;
+    <span class="kw">return</span> <span class="kw">ok</span>;
+}</code></pre></div><ul><li>只能写调用：<code>defer f(...)</code> / <code>defer x.m(...)</code> / <code>defer 模块.f(...)</code>。</li><li>参数在 <code>defer</code> 那一行就求值，之后再改变量不影响已经捕获的值。</li><li>多个 <code>defer</code> 后进先出：最后登记的最先执行。</li><li>正常返回、<code>return</code>、<code>?</code> 提前返回、运行时报错都会执行。</li><li>每个函数只执行自己的 <code>defer</code>，内层函数返回时只清理内层登记的项。</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">demo</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">defer</span> <span class="fn">print</span>(<span class="st">"first"</span>);        <span class="cm">// 最后执行</span>
+    <span class="kw">defer</span> <span class="fn">print</span>(<span class="st">"second"</span>);       <span class="cm">// 先执行</span>
+    <span class="fn">print</span>(<span class="st">"body"</span>);
+}
+<span class="cm">// 输出：body / second / first</span></code></pre></div><h3 id="310-async-await异步任务">3.10 async / await：异步任务</h3><p><code>async func</code> 声明会在独立运行时执行的任务函数；调用它立即返回 <code>task&lt;T&gt;</code>，用 <code>await</code> 取回结果。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">async</span> <span class="kw">func</span> <span class="fn">load</span>(id: <span class="ty">int</span>) -&gt; user {
+    <span class="kw">return</span> <span class="fn">fetch_user</span>(id);
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="cm">// 先启动两个任务，再依次等待：两个任务真正并行。</span>
+    <span class="kw">let</span> a: <span class="ty">task</span>&lt;user&gt; = <span class="fn">load</span>(<span class="nm">1</span>);
+    <span class="kw">let</span> b: <span class="ty">task</span>&lt;user&gt; = <span class="fn">load</span>(<span class="nm">2</span>);
+    <span class="kw">let</span> first: user = <span class="kw">await</span> a;
+    <span class="kw">let</span> second: user = <span class="kw">await</span> b;
+    <span class="fn">print</span>(first.name + second.name);
+}</code></pre></div><ul><li><code>async</code> 只能修饰模块级自由函数；方法、<code>main</code>、带注解的函数都不能是 async。</li><li>任务在调用点就开始执行；不 <code>await</code> 的任务仍在后台运行，结果丢弃。</li><li><code>await</code> 只接受 <code>task&lt;T&gt;</code>，返回 <code>T</code>；同一任务只能等待一次。</li><li>任务有独立运行时：看不到调用方变量与闭包，参数与返回值按值复制（闭包不能跨任务）。</li><li>任务失败时，<code>await</code> 会把原错误（含函数栈）抛回调用方。</li><li>调度器按 4× CPU 核数创建 8..=64 个工作线程；<code>await</code> 先等完成通知（约 200µs）让任务在调度线程上跑完，超时未完成才由等待方协助执行，嵌套 <code>await</code> 不会死锁。</li></ul><h2 id="4-内建方法速查">4. 内建方法速查<a class="anchor" href="#4-内建方法速查" aria-hidden="true"></a></h2><h3 id="41-整数与浮点">4.1 整数与浮点<a class="anchor" href="#41-整数与浮点" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">方法</th><th style="text-align:left">返回</th></tr></thead><tbody><tr><td style="text-align:left">.to_int(base) / .to_i8(base) / .to_i16(base) / .to_i32(base) / .to_i64(base) / .to_u8(base) / .to_u16(base) / .to_u32(base) / .to_u64(base)</td><td style="text-align:left">对应整数类型；接收者必须是变量；<code>base</code> 是进制（2..36，缺省 10）：<code>let s: string = "ff"; s.to_u8(16)</code>、<code>let n: i8 = 55; n.to_i8(16)</code></td></tr><tr><td style="text-align:left">.to_float() / .to_string() / .to_string_base(base)</td><td style="text-align:left">float / string</td></tr><tr><td style="text-align:left">.abs() / .min(o) / .max(o) / .mod(m) / .pow(e) / .clamp(lo, hi)</td><td style="text-align:left">同类型</td></tr></tbody></table></div><p>浮点：<code>.to_int()</code>、<code>.to_float()</code>、<code>.to_string()</code>、<code>.abs()</code>、<code>.min</code>、<code>.max</code>、<code>.pow</code>、<code>.clamp</code>。</p><h3 id="42-字符串">4.2 字符串<a class="anchor" href="#42-字符串" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">方法</th><th style="text-align:left">返回</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">.len()</td><td style="text-align:left">int</td><td style="text-align:left">Unicode 字符数</td></tr><tr><td style="text-align:left">.at(i) / .slice(start, end)</td><td style="text-align:left">result&lt;string, string&gt;</td><td style="text-align:left">越界返回 err</td></tr><tr><td style="text-align:left">.first() / .last()</td><td style="text-align:left">string</td><td style="text-align:left">空串返回 ""</td></tr><tr><td style="text-align:left">.contains / .starts_with / .ends_with</td><td style="text-align:left">bool</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.index_of / .last_index_of</td><td style="text-align:left">option&lt;int&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.to_upper / .to_lower / .trim / .trim_start / .trim_end</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.replace(old, new) / .replace_all(old, new)</td><td style="text-align:left">string</td><td style="text-align:left">替换一处 / 全部</td></tr><tr><td style="text-align:left">.split(sep) / .split_lines() / .chars() / .bytes()</td><td style="text-align:left">vec&lt;string&gt; / vec&lt;u8&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.reverse() / .filter(f) / .remove_whitespace()</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.to_int() / .to_float() / .to_bool()</td><td style="text-align:left">result&lt;T, string&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.pad_start(n, pad) / .pad_end(n, pad) / .repeat(n)</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.join(items)</td><td style="text-align:left">string</td><td style="text-align:left">items: vec&lt;string&gt;</td></tr></tbody></table></div><h3 id="43-vec">4.3 vec<a class="anchor" href="#43-vec" aria-hidden="true"></a></h3><p><code>.len()</code>、<code>.is_empty()</code>、<code>.at(i)</code>、<code>.push(x)</code>、<code>.pop()</code>、<code>.insert(i, x)</code>、<code>.remove(i)</code>、<code>.clear()</code>、<code>.reverse()</code>、<code>.sort(cmp)</code>、<code>.map(f)</code>、<code>.filter(f)</code>、<code>.reduce(f, init)</code>、<code>.find(f)</code>、<code>.any(f)</code> / <code>.all(f)</code> / <code>.count(f)</code>、<code>.slice(start, end)</code>、<code>.concat(other)</code>、<code>.unique()</code>、<code>.flatten()</code>、<code>.join(sep)</code>、<code>.chunk(n)</code>、<code>.zip(other)</code>、<code>.take(n)</code>、<code>.skip(n)</code>、<code>.clone()</code>。</p><h3 id="44-map">4.4 map<a class="anchor" href="#44-map" aria-hidden="true"></a></h3><p><code>.set(k, v)</code>、<code>.get(k)</code>、<code>.has(k)</code>、<code>.delete(k)</code>、<code>.len()</code>、<code>.keys()</code>、<code>.values()</code>、<code>.items()</code>、<code>.merge(other)</code>、<code>.filter(f)</code>、<code>.clone()</code>。</p><h3 id="45-any">4.5 any<a class="anchor" href="#45-any" aria-hidden="true"></a></h3><p><code>.as_string()</code>、<code>.as_int()</code>、<code>.as_float()</code>、<code>.as_bool()</code>、<code>.as_vec()</code>、<code>.as_map()</code>，全部返回 <code>option&lt;T&gt;</code>，类型不符返回 <code>none</code>。</p><h2 id="5-标准库组件">5. 标准库组件<a class="anchor" href="#5-标准库组件" aria-hidden="true"></a></h2><h3 id="51-组件总览">5.1 组件总览<a class="anchor" href="#51-组件总览" aria-hidden="true"></a></h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">组件</th><th style="text-align:left">用途</th><th style="text-align:left">常用入口</th></tr></thead><tbody><tr><td style="text-align:left">std/http</td><td style="text-align:left">Web 服务端、路由、中间件、客户端</td><td style="text-align:left">http.serve / http.router / http.fetch</td></tr><tr><td style="text-align:left">std/db</td><td style="text-align:left">SQLite / MySQL / PostgreSQL / SQL Server</td><td style="text-align:left">db.open、db.table</td></tr><tr><td style="text-align:left">std/json</td><td style="text-align:left">JSON 编解码</td><td style="text-align:left">json.encode / json.decode</td></tr><tr><td style="text-align:left">std/str std/vec std/map</td><td style="text-align:left">集合工具</td><td style="text-align:left">str.split、vec.sum、map.merge</td></tr><tr><td style="text-align:left">std/time</td><td style="text-align:left">时间与格式化</td><td style="text-align:left">time.now / time.format</td></tr><tr><td style="text-align:left">std/fs std/path</td><td style="text-align:left">文件、目录、路径</td><td style="text-align:left">fs.read_file、path.join</td></tr><tr><td style="text-align:left">std/process std/sys</td><td style="text-align:left">子进程、环境变量、堆信息</td><td style="text-align:left">process.run、sys.env_get</td></tr><tr><td style="text-align:left">std/log std/dev</td><td style="text-align:left">分级日志、调试输出</td><td style="text-align:left">log.info、dev.log</td></tr><tr><td style="text-align:left">std/crypto</td><td style="text-align:left">哈希、AES、RSA、密码、随机</td><td style="text-align:left">crypto.sha256、crypto.password_hash</td></tr><tr><td style="text-align:left">std/encode</td><td style="text-align:left">URL / HTML / CSV / 查询串</td><td style="text-align:left">encode.url_encode</td></tr><tr><td style="text-align:left">std/xml std/regex</td><td style="text-align:left">XML 解析、正则</td><td style="text-align:left">xml.parse、regex.replace</td></tr><tr><td style="text-align:left">std/rand std/uuid std/compress</td><td style="text-align:left">随机、UUID、gzip</td><td style="text-align:left">rand.int、uuid.v4、compress.gzip</td></tr><tr><td style="text-align:left">std/net std/ws std/redis</td><td style="text-align:left">TCP/UDP、WebSocket、Redis</td><td style="text-align:left">net.tcp_connect、ws.serve</td></tr><tr><td style="text-align:left">std/task std/cache std/queue</td><td style="text-align:left">定时/后台任务、进程缓存、持久化队列</td><td style="text-align:left">task.spawn、cache.set、queue.enqueue</td></tr><tr><td style="text-align:left">std/sync</td><td style="text-align:left">跨线程互斥锁、原子计数、通道</td><td style="text-align:left">sync.mutex、sync.atomic、sync.channel</td></tr><tr><td style="text-align:left">std/session std/jwt std/validate std/template</td><td style="text-align:left">Web 通用件</td><td style="text-align:left">会话、JWT、校验、模板</td></tr><tr><td style="text-align:left">std/cli</td><td style="text-align:left">命令行参数</td><td style="text-align:left">cli.flag / cli.option</td></tr><tr><td style="text-align:left">std/llm</td><td style="text-align:left">大模型调用（本地模拟）</td><td style="text-align:left">llm.new_client</td></tr><tr><td style="text-align:left">std/zip std/mail</td><td style="text-align:left">ZIP 归档、SMTP 邮件</td><td style="text-align:left">zip.extract、mail.send</td></tr><tr><td style="text-align:left">std/reflect</td><td style="text-align:left">运行时类型信息、按名字调用方法</td><td style="text-align:left">reflect.type_name、reflect.invoke</td></tr><tr><td style="text-align:left">rust/serde_json</td><td style="text-align:left">Rust 互操作包</td><td style="text-align:left">json.to_string / json.from_str</td></tr></tbody></table></div><h3 id="52-HTTP-服务端">5.2 HTTP 服务端<a class="anchor" href="#52-HTTP-服务端" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;
+
+http.<span class="fn">serve</span>(port: <span class="ty">int</span>, handler: <span class="kw">func</span>(http.request) -&gt; http.response) -&gt; <span class="ty">void</span>
+http.<span class="fn">router</span>(routes: <span class="ty">vec</span>&lt;http.route&gt;) -&gt; <span class="kw">func</span>(http.request) -&gt; http.response
+http.get / post / put / delete / patch / options / <span class="fn">head</span>(path, handler) -&gt; http.route
+http.<span class="kw">static</span>(prefix: <span class="ty">string</span>, dir: <span class="ty">string</span>) -&gt; http.route
+http.<span class="fn">group</span>(prefix, middlewares, routes) -&gt; http.route
+http.<span class="fn">chain</span>(middlewares, handler) -&gt; handler
+http.<span class="fn">cors</span>(origin) / http.<span class="fn">security_headers</span>() / http.<span class="fn">with_headers</span>(<span class="ty">map</span>) / http.<span class="fn">rate_limit</span>(rate, burst)
+http.<span class="fn">openapi</span>(handler, title, version) -&gt; <span class="ty">string</span></code></pre></div><p><strong>路由</strong>：注解优先，<code>http.router</code> 构建时自动注册；静态资源等显式路由作为参数传入。</p><div class="code-block"><pre><code class="lang-rp"><span class="an">#[get("/users/:id")]</span>
+<span class="kw">func</span> <span class="fn">show</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> id: <span class="ty">string</span> = req.params.<span class="fn">get</span>(<span class="st">"id"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+    <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [id = id]];
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> extra: <span class="ty">vec</span>&lt;http.route&gt; = [http.<span class="kw">static</span>(<span class="st">"/assets"</span>, <span class="st">"public"</span>)];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(extra));
+}</code></pre></div><p>路径里 <code>:name</code> 是参数，<code>*</code> 是前缀匹配；通配静态路由要放在显式路由最后。</p><p><strong><code>http.request</code> 字段</strong></p><div class="table-wrap"><table><thead><tr><th style="text-align:left">字段</th><th style="text-align:left">类型</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">method / path</td><td style="text-align:left">string</td><td style="text-align:left">请求方法 / 路径</td></tr><tr><td style="text-align:left">params</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">路径参数</td></tr><tr><td style="text-align:left">query</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">查询参数</td></tr><tr><td style="text-align:left">headers</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">请求头，键小写</td></tr><tr><td style="text-align:left">body</td><td style="text-align:left">string</td><td style="text-align:left">原始请求体</td></tr><tr><td style="text-align:left">json</td><td style="text-align:left">option&lt;any&gt;</td><td style="text-align:left">请求体为 JSON 时解析</td></tr><tr><td style="text-align:left">form</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">表单字段</td></tr><tr><td style="text-align:left">cookies</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Cookie</td></tr><tr><td style="text-align:left">files</td><td style="text-align:left">vec&lt;http.file&gt;</td><td style="text-align:left">上传文件</td></tr><tr><td style="text-align:left">client_ip / request_id</td><td style="text-align:left">string</td><td style="text-align:left">客户端 IP / 请求 ID</td></tr><tr><td style="text-align:left">ctx</td><td style="text-align:left">map&lt;string, any&gt;</td><td style="text-align:left">中间件与处理函数共享的数据</td></tr></tbody></table></div><p><strong><code>http.response</code> 字段</strong></p><div class="table-wrap"><table><thead><tr><th style="text-align:left">字段</th><th style="text-align:left">类型</th><th style="text-align:left">默认</th></tr></thead><tbody><tr><td style="text-align:left">status</td><td style="text-align:left">int</td><td style="text-align:left">200</td></tr><tr><td style="text-align:left">headers</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">空</td></tr><tr><td style="text-align:left">body</td><td style="text-align:left">string</td><td style="text-align:left">空</td></tr><tr><td style="text-align:left">json</td><td style="text-align:left">option&lt;any&gt;</td><td style="text-align:left">none</td></tr><tr><td style="text-align:left">sse</td><td style="text-align:left">option&lt;func(func(http.sse_event) -&gt; void) -&gt; void&gt;</td><td style="text-align:left">none</td></tr></tbody></table></div><p><code>body</code> / <code>json</code> / <code>sse</code> 三选一，同时写两个是编译错误。写 <code>json</code> 自动序列化并设置 <code>application/json</code>。</p><p><strong>中间件</strong>：工厂函数 <code>func(handler) -&gt; handler</code>。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">require_user</span>(next: <span class="kw">func</span>(http.request) -&gt; http.response)
+    -&gt; <span class="kw">func</span>(http.request) -&gt; http.response {
+    <span class="kw">return</span> <span class="kw">func</span>(<span class="kw">write</span> req: http.request) -&gt; http.response {
+        <span class="kw">let</span> token: <span class="ty">string</span> = req.headers.<span class="fn">get</span>(<span class="st">"authorization"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+        <span class="kw">if</span> token == <span class="st">""</span> {
+            <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = <span class="st">"unauthorized"</span>];
+        }
+        req.ctx.<span class="fn">set</span>(<span class="st">"user"</span>, token);
+        <span class="kw">return</span> <span class="fn">next</span>(req);
+    };
+}
+
+http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>([
+    http.<span class="fn">group</span>(<span class="st">"/api"</span>, [http.<span class="fn">cors</span>(<span class="st">"*"</span>), http.<span class="fn">security_headers</span>(), require_user], [
+        http.<span class="fn">get</span>(<span class="st">"/me"</span>, me)
+    ])
+]));</code></pre></div><p><strong>SSE 流式输出</strong>：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">ticks</span>(send: <span class="kw">func</span>(http.sse_event) -&gt; <span class="ty">void</span>) -&gt; <span class="ty">void</span> {
+    <span class="fn">send</span>(http.sse_event[event = <span class="st">"tick"</span>, data = <span class="st">"1"</span>]);
+}
+
+<span class="an">#[get("/events")]</span>
+<span class="kw">func</span> <span class="fn">events</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">return</span> http.response[sse = <span class="kw">some</span>(ticks)];
+}</code></pre></div><p><strong>上传与下载</strong>：</p><div class="code-block"><pre><code class="lang-rp"><span class="an">#[post("/upload")]</span>
+<span class="kw">func</span> <span class="fn">upload</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> <span class="kw">mut</span> paths: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; = [];
+    <span class="kw">for</span> file <span class="kw">in</span> req.files.<span class="fn">clone</span>() {
+        <span class="kw">match</span> http.<span class="fn">save_file</span>(<span class="st">"uploads"</span>, file) {
+            <span class="kw">ok</span>(path) =&gt; { paths.<span class="fn">push</span>(path); }
+            <span class="kw">err</span>(message) =&gt; { }
+        }
+    }
+    <span class="kw">return</span> http.response[status = <span class="nm">201</span>, json = [files = paths]];
+}</code></pre></div><p><strong>调用第三方服务</strong>：</p><div class="code-block"><pre><code class="lang-rp">http.<span class="fn">fetch</span>(method, url, headers, body) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">fetch_file</span>(method, url, headers, path) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">fetch_retry</span>(method, url, headers, body, attempts) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">download</span>(url, headers, path) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;</code></pre></div><p><code>http.client_response</code>：<code>status: int</code>、<code>headers: map&lt;string, string&gt;</code>（键小写）、<code>body: string</code>。二进制下载用 <code>download</code> 或 <code>fetch_file</code>。</p><h3 id="53-数据库">5.3 数据库<a class="anchor" href="#53-数据库" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">db.<span class="fn">open</span>(dsn) -&gt; <span class="ty">result</span>&lt;db.conn, <span class="ty">string</span>&gt;</code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">数据库</th><th style="text-align:left">DSN 示例</th></tr></thead><tbody><tr><td style="text-align:left">SQLite</td><td style="text-align:left">storage/app.db、sqlite::memory:</td></tr><tr><td style="text-align:left">MySQL</td><td style="text-align:left">mysql://root:pass@127.0.0.1:3306/app</td></tr><tr><td style="text-align:left">PostgreSQL</td><td style="text-align:left">postgres://user:pass@127.0.0.1:5432/app</td></tr><tr><td style="text-align:left">SQL Server</td><td style="text-align:left">mssql://sa:pass@127.0.0.1:1433/app</td></tr></tbody></table></div><p>SQL 统一写 <code>?</code> 占位符，运行时按方言改写。</p><p><strong>连接方法</strong>：<code>.execute(sql, params)</code>、<code>.execute_many(sql, rows)</code>（批量绑定多组参数，自动包事务）、<code>.query(sql, params)</code>、<code>.query_one(sql, params)</code>、<code>.last_insert_id()</code>、<code>.begin()</code> / <code>.commit()</code> / <code>.rollback()</code>、<code>.close()</code>。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> conn.<span class="fn">query</span>(<span class="st">"SELECT id, name FROM users WHERE name LIKE ?"</span>, [<span class="st">"%张%"</span>]) {
+    <span class="kw">ok</span>(rows) =&gt; {
+        <span class="kw">for</span> row <span class="kw">in</span> rows {
+            dev.<span class="fn">log</span>(row.<span class="fn">get</span>(<span class="st">"name"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>).<span class="fn">as_string</span>().<span class="fn">unwrap_or</span>(<span class="st">""</span>));
+        }
+    }
+    <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><p><strong>链式 ORM</strong>：</p><div class="code-block"><pre><code class="lang-rp">db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">insert</span>(values)                    <span class="cm">// map / ary</span>
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">where</span>(<span class="st">"id"</span>, <span class="st">"="</span>, <span class="nm">1</span>).<span class="fn">update</span>(changes)
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">where</span>(<span class="st">"id"</span>, <span class="st">"="</span>, <span class="nm">1</span>).<span class="fn">delete</span>()
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">field</span>(<span class="st">"id, name"</span>).<span class="fn">order</span>(<span class="st">"id"</span>, <span class="st">"desc"</span>).<span class="fn">limit</span>(<span class="nm">10</span>).<span class="fn">select</span>()</code></pre></div><p>构造器方法：<code>.field</code>、<code>.where</code>、<code>.where_in</code>、<code>.where_null</code>、<code>.join</code>、<code>.order</code>、<code>.limit</code>、<code>.offset</code>、<code>.select</code>、<code>.find</code>、<code>.count</code>、<code>.value</code>、<code>.column</code>、<code>.insert</code>、<code>.update</code>、<code>.delete</code>、<code>.to_sql</code>、<code>.clone</code>。</p><p><strong>关系查询</strong>：<code>db.has_many(conn, 子表, 外键列, 父 id)</code>、<code>db.belongs_to(conn, 父表, id)</code>、<code>db.belongs_to_by(conn, 父表, 唯一列, 值)</code>。</p><h3 id="54-JSON时间文件路径进程与系统">5.4 JSON、时间、文件、路径、进程与系统<a class="anchor" href="#54-JSON时间文件路径进程与系统" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">json.<span class="fn">encode</span>(<span class="ty">any</span>) -&gt; <span class="ty">string</span>
+json.<span class="fn">decode</span>(<span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">any</span>, <span class="ty">string</span>&gt;
+
+time.<span class="fn">now</span>() -&gt; time.datetime          <span class="cm">// .timestamp_ms() / .format(pattern) / .to_string()</span>
+time.<span class="fn">timestamp_ms</span>() / <span class="fn">timestamp_s</span>() -&gt; <span class="ty">int</span>
+time.<span class="fn">format</span>(timestamp_ms, pattern) -&gt; <span class="ty">string</span>
+time.<span class="fn">format_zone</span>(timestamp_ms, pattern, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+time.<span class="fn">parse_zone</span>(text, pattern, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+time.<span class="fn">offset</span>(timestamp_ms, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;   <span class="cm">// 相对 UTC 的秒数（含夏令时）</span>
+time.<span class="fn">zone_names</span>() -&gt; <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; / time.<span class="fn">local_zone</span>() -&gt; <span class="ty">string</span>
+time.<span class="fn">sleep</span>(ms) -&gt; <span class="ty">void</span>
+
+fs.read_file / write_file / append_file / exists / make_dir / remove_dir
+fs.remove_file / copy_file / rename / file_size / list_dir / list_dir_all / metadata
+fs.<span class="fn">temp_file</span>(prefix) / <span class="fn">temp_dir</span>(prefix)
+
+path.<span class="fn">join</span>(a, b) / <span class="fn">normalize</span>(p) / <span class="fn">absolute</span>(p) / <span class="fn">file_name</span>(p) / <span class="fn">parent</span>(p) / <span class="fn">extension</span>(p) / <span class="fn">stem</span>(p)
+
+process.<span class="fn">run</span>(cmd, args) -&gt; [code: <span class="ty">int</span>, stdout: <span class="ty">string</span>, stderr: <span class="ty">string</span>]
+process.<span class="fn">run_shell</span>(cmd) -&gt; [code: <span class="ty">int</span>, stdout: <span class="ty">string</span>, stderr: <span class="ty">string</span>]   <span class="cm">// 设置环境变量 RIP_DISABLE_SHELL 后调用直接返回 err</span>
+
+sys.<span class="fn">env_get</span>(name) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+sys.<span class="fn">args</span>() -&gt; <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt;
+sys.<span class="fn">exit</span>(code) -&gt; <span class="ty">void</span>
+sys.<span class="fn">platform</span>() -&gt; <span class="ty">string</span>
+sys.<span class="fn">heap_usage</span>() / sys.<span class="fn">gc</span>() -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt;</code></pre></div><h3 id="55-日志与调试">5.5 日志与调试<a class="anchor" href="#55-日志与调试" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">log.debug / info / warn / <span class="fn">error</span>(text) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_level</span>(<span class="st">"debug"</span> | <span class="st">"info"</span> | <span class="st">"warn"</span> | <span class="st">"error"</span>) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_format</span>(<span class="st">"text"</span> | <span class="st">"json"</span>) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_file</span>(path) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+log.<span class="fn">set_rotate</span>(max_bytes, keep) -&gt; <span class="ty">void</span>       <span class="cm">// 超过上限切成 .1 / .2 …</span>
+
+dev.<span class="fn">log</span>(value) -&gt; <span class="ty">void</span>            <span class="cm">// 调试输出，release 构建剔除</span>
+dev.<span class="fn">log_json</span>(value) / dev.<span class="fn">assert</span>(cond) / dev.<span class="fn">trace</span>(msg) / dev.<span class="fn">time_start</span>(name) / dev.<span class="fn">time_end</span>(name)</code></pre></div><p><code>json</code> 格式的日志在请求上下文中自动带 <code>request_id</code> 与 <code>trace_id</code>，能和追踪对上。</p><h3 id="56-加密与编码">5.6 加密与编码<a class="anchor" href="#56-加密与编码" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">crypto.md5 / sha1 / sha256 / <span class="fn">sha512</span>(text) -&gt; <span class="ty">string</span>
+crypto.<span class="fn">hmac_sha256</span>(key, text) -&gt; <span class="ty">string</span>
+crypto.base64_encode / base64_decode / hex_encode / hex_decode
+crypto.<span class="fn">random_hex</span>(bytes) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">password_hash</span>(password) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">password_verify</span>(password, hashed) -&gt; <span class="ty">bool</span>
+crypto.<span class="fn">aes_encrypt</span>(text, key) / <span class="fn">aes_decrypt</span>(cipher, key) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">rsa_generate</span>(bits) / rsa_sign / rsa_verify / rsa_encrypt / rsa_decrypt
+
+encode.url_encode / url_decode / html_escape / html_unescape
+encode.<span class="fn">csv_encode</span>(rows) / <span class="fn">csv_parse</span>(text)
+encode.<span class="fn">query_parse</span>(text) / <span class="fn">query_stringify</span>(<span class="ty">map</span>)
+
+xml.<span class="fn">parse</span>(text) -&gt; <span class="ty">result</span>&lt;xml.node, <span class="ty">string</span>&gt;
+xml.stringify / pretty / name / text / attrs / children / find / find_all / escape / unescape
+
+regex.<span class="fn">is_match</span>(pat, text) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+regex.find / find_all / captures / replace
+rand.<span class="ty">int</span>(min, max) / rand.<span class="ty">float</span>() / rand.<span class="ty">bool</span>()
+uuid.<span class="fn">v4</span>() / uuid.<span class="fn">nil</span>()
+compress.<span class="fn">gzip</span>(text) / <span class="fn">gunzip</span>(base64)</code></pre></div><h3 id="57-任务缓存与队列">5.7 任务、缓存与队列<a class="anchor" href="#57-任务缓存与队列" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">task.<span class="fn">spawn</span>(<span class="st">"函数名"</span>) -&gt; <span class="ty">bool</span>         <span class="cm">// 独立线程执行一次无参函数</span>
+task.<span class="fn">sleep</span>(ms) -&gt; <span class="ty">void</span>
+
+<span class="an">#[interval("5m")]</span>
+<span class="kw">func</span> <span class="fn">cleanup</span>() -&gt; <span class="ty">void</span> { }
+
+cache.<span class="fn">set</span>(key, value, ttl_ms) -&gt; <span class="ty">void</span>     <span class="cm">// ttl_ms = 0 永不过期</span>
+cache.<span class="fn">get</span>(key) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+cache.<span class="fn">delete</span>(key) / cache.<span class="fn">clear</span>() / cache.<span class="fn">len</span>()
+cache.<span class="fn">configure</span>(max_entries) -&gt; <span class="ty">int</span>
+cache.<span class="fn">stats</span>() -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt;
+
+queue.<span class="fn">enqueue</span>(dsn, queue, payload, delay_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+queue.<span class="fn">reserve</span>(dsn, queue, lease_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">option</span>&lt;queue.job&gt;, <span class="ty">string</span>&gt;
+queue.<span class="fn">ack</span>(dsn, id) / queue.<span class="fn">fail</span>(dsn, id, message)
+queue.<span class="fn">release_expired</span>(dsn) / queue.<span class="fn">stats</span>(dsn, queue)</code></pre></div><ul><li>定时任务每个在独立线程、独立解释器里运行，不共享 Rip 变量。</li><li><code>cache</code> 只存 <code>string</code>，结构化数据先 <code>json.encode</code>。</li><li><code>queue</code> 基于 SQLite，至少一次投递，处理函数必须幂等；<code>queue.job</code> 字段：<code>id</code> / <code>queue</code> / <code>payload</code> / <code>attempts</code>。</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="an">#[interval("10s")]</span>
+<span class="kw">func</span> <span class="fn">poll</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">match</span> queue.<span class="fn">reserve</span>(<span class="st">"storage/jobs.db"</span>, <span class="st">"mail"</span>, <span class="nm">30000</span>) {
+        <span class="kw">ok</span>(job) =&gt; {
+            <span class="kw">match</span> job {
+                <span class="kw">some</span>(item) =&gt; {
+                    <span class="cm">// 处理 item.payload</span>
+                    queue.<span class="fn">ack</span>(<span class="st">"storage/jobs.db"</span>, item.id);
+                }
+                <span class="kw">none</span> =&gt; { }
+            }
+        }
+        <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+    }
+}</code></pre></div><h3 id="58-会话JWT校验与模板">5.8 会话、JWT、校验与模板<a class="anchor" href="#58-会话JWT校验与模板" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">session.<span class="fn">save</span>(data, secret, ttl_secs) -&gt; <span class="ty">string</span>
+session.<span class="fn">cookie</span>(token, ttl_secs) -&gt; <span class="ty">string</span>   <span class="cm">// 服务端启用 HTTPS 时自动附加 Secure 属性</span>
+session.<span class="fn">load</span>(req, secret) -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;
+session.<span class="fn">clear</span>() -&gt; <span class="ty">string</span>
+session.<span class="fn">csrf_token</span>(secret) / session.<span class="fn">csrf_check</span>(req, secret)
+
+jwt.<span class="fn">sign</span>(payload, secret, ttl_secs) -&gt; <span class="ty">string</span>
+jwt.<span class="fn">verify</span>(token, secret) -&gt; <span class="ty">result</span>&lt;<span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;, <span class="ty">string</span>&gt;
+
+validate.<span class="fn">required</span>(value) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+validate.<span class="fn">int_range</span>(value, min, max) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+validate.<span class="fn">string_len</span>(value, min, max) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+validate.<span class="fn">email</span>(value) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+
+template.<span class="fn">render</span>(source, data) -&gt; <span class="ty">string</span>
+template.<span class="fn">escape</span>(text) -&gt; <span class="ty">string</span>
+template.<span class="fn">clear_cache</span>() -&gt; <span class="ty">void</span></code></pre></div><p>模板语法：<code>{{ x }}</code> 自动转义、<code>{{{ raw }}}</code> 原样输出、<code>{{#if x}}…{{else}}…{{/if}}</code>、<code>{{#unless x}}</code>、<code>{{#each items}}{{ @index }}:{{ . }}{{/each}}</code>、<code>{{! 注释 }}</code>。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> token: <span class="ty">string</span> = jwt.<span class="fn">sign</span>([<span class="st">"sub"</span> = <span class="st">"42"</span>, <span class="st">"role"</span> = <span class="st">"admin"</span>], secret, <span class="nm">3600</span>);
+<span class="kw">match</span> jwt.<span class="fn">verify</span>(token, secret) {
+    <span class="kw">ok</span>(claims) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = <span class="kw">some</span>(claims)]; }
+    <span class="kw">err</span>(message) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = message]; }
+}</code></pre></div><h3 id="59-网络WebSocketRedisLLM">5.9 网络、WebSocket、Redis、LLM<a class="anchor" href="#59-网络WebSocketRedisLLM" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">net.<span class="fn">tcp_connect</span>(host, port, timeout_ms) -&gt; <span class="ty">result</span>&lt;net.conn, <span class="ty">string</span>&gt;
+net.<span class="fn">tcp_send</span>(conn, data) / <span class="fn">tcp_recv</span>(conn, max_bytes, timeout_ms) / <span class="fn">tcp_recv_line</span>(...)
+net.<span class="fn">tcp_close</span>(conn) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+net.<span class="fn">tcp_listen</span>(host, port) / <span class="fn">tcp_accept</span>(listener, timeout_ms) / <span class="fn">tcp_listener_close</span>(listener)
+net.<span class="fn">udp_bind</span>(host, port) / <span class="fn">udp_send</span>(socket, host, port, data) / <span class="fn">udp_recv</span>(socket, max_bytes, timeout_ms)
+
+ws.<span class="fn">serve</span>(port, <span class="kw">func</span>(ws.conn) -&gt; <span class="ty">void</span>) -&gt; <span class="ty">void</span>   <span class="cm">// 握手超时 10s；浏览器 Origin 与 Host 不同源时拒绝（403）</span>
+ws.<span class="fn">connect</span>(url, timeout_ms) -&gt; <span class="ty">result</span>&lt;ws.conn, <span class="ty">string</span>&gt;
+ws.<span class="fn">send</span>(conn, text) / ws.<span class="fn">recv</span>(conn, timeout_ms) / ws.<span class="fn">ping</span>(conn) / ws.<span class="fn">close</span>(conn)
+
+redis.<span class="fn">connect</span>(url) -&gt; <span class="ty">result</span>&lt;redis.conn, <span class="ty">string</span>&gt;
+redis.<span class="fn">lock</span>(conn, key, ttl_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">option</span>&lt;<span class="ty">string</span>&gt;, <span class="ty">string</span>&gt;
+redis.<span class="fn">unlock</span>(conn, key, token) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+redis.<span class="fn">rate_limit</span>(conn, key, limit, window_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+conn.get / set / setex / setnx / del / exists / expire / incr / decr
+conn.hget / hset / hdel / lpush / rpush / lpop / rpop / brpop / llen / eval / close
+
+llm.<span class="fn">new_client</span>(config) -&gt; llm.client
+client.<span class="fn">chat</span>(msgs, opts) / <span class="fn">chat_stream</span>(msgs, opts, on_chunk) / <span class="fn">chat_json</span>(msgs, opts, target)</code></pre></div><h3 id="510-集合工具与命令行">5.10 集合工具与命令行<a class="anchor" href="#510-集合工具与命令行" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp">str.<span class="fn">split</span>(text, sep) / <span class="fn">lines</span>(text) / <span class="fn">join</span>(items, sep)
+str.trim / trim_start / trim_end / lower / upper
+str.contains / starts_with / ends_with
+str.<span class="fn">replace</span>(text, from, to) / <span class="fn">slice</span>(text, start, end)
+str.<span class="fn">repeat</span>(text, n) / <span class="fn">pad_start</span>(text, width, pad) / <span class="fn">pad_end</span>(...)
+str.<span class="fn">index_of</span>(text, sub) / <span class="fn">len</span>(text) / <span class="fn">is_empty</span>(text) / <span class="fn">split_once</span>(text, sep)
+str.<span class="fn">normalize</span>(text, form) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;   <span class="cm">// nfc / nfd / nfkc / nfkd</span>
+str.<span class="fn">graphemes</span>(text) / <span class="fn">grapheme_len</span>(text) / <span class="fn">width</span>(text)
+
+<span class="ty">vec</span>.len / is_empty / contains / index_of / first / last / sum / range / range_between
+<span class="ty">map</span>.keys / values / len / has / get / merge / without
+
+cli.<span class="fn">args</span>() / <span class="fn">command</span>() / <span class="fn">positionals</span>()
+cli.<span class="fn">flag</span>(name) -&gt; <span class="ty">bool</span>
+cli.<span class="ty">option</span>(name, default) -&gt; <span class="ty">string</span></code></pre></div><h3 id="510-并发原语">5.10 并发原语<a class="anchor" href="#510-并发原语" aria-hidden="true"></a></h3><p>线程之间不共享 Rip 变量；需要共享状态时用 <code>std/sync</code> 的<strong>命名</strong>原语：同一个名字在 HTTP 工作线程、<code>parallel</code> 分支、<code>task.spawn</code>、定时任务里都是同一个对象。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::sync;
+
+<span class="kw">let</span> lock: sync.mutex = sync.<span class="fn">mutex</span>(<span class="st">"report_lock"</span>);
+<span class="kw">let</span> counter: sync.atomic = sync.<span class="fn">atomic</span>(<span class="st">"jobs_done"</span>, <span class="nm">0</span>);
+<span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);</code></pre></div><p><strong>互斥锁</strong>：<code>lock()</code> / <code>try_lock()</code> / <code>lock_timeout(ms)</code> / <code>unlock()</code> / <code>is_locked()</code>。拿到锁后推荐用 <code>defer</code> 释放：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">write_report</span>(text: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">void</span>, <span class="ty">string</span>&gt; {
+    lock.<span class="fn">lock</span>();
+    <span class="kw">defer</span> lock.<span class="fn">unlock</span>();      <span class="cm">// 提前返回或出错也会释放</span>
+    fs.<span class="fn">write_file</span>(<span class="st">"report.txt"</span>, text)?;
+    <span class="kw">return</span> <span class="kw">ok</span>;
+}</code></pre></div><p><strong>原子整数</strong>：<code>load()</code> / <code>store(v)</code> / <code>add(v)</code> / <code>sub(v)</code> / <code>swap(v)</code> / <code>compare_swap(old, new)</code>，全部是 <code>SeqCst</code>；<code>add</code> / <code>sub</code> / <code>swap</code> 返回旧值。</p><p><strong>通道</strong>（有界队列，传输值的深拷贝）：</p><div class="code-block"><pre><code class="lang-rp">ch.<span class="fn">send</span>(value) / ch.<span class="fn">try_send</span>(value) / ch.<span class="fn">send_timeout</span>(value, ms)
+ch.<span class="fn">recv</span>() / ch.<span class="fn">try_recv</span>() / ch.<span class="fn">recv_timeout</span>(ms)   <span class="cm">// 返回 option&lt;any&gt;</span>
+ch.<span class="fn">close</span>() / ch.<span class="fn">is_closed</span>() / ch.<span class="fn">len</span>() / ch.<span class="fn">capacity</span>()</code></pre></div><ul><li>满时 <code>send</code> 阻塞；<code>try_send</code> 返回 <code>false</code>；<code>send_timeout</code> 最多等 <code>ms</code>。</li><li>关闭后先读完排队值，再 <code>recv</code> 得到 <code>none</code>；之后 <code>send</code> 报错。</li><li>取出的值是 <code>any</code>，用 <code>.as_int()</code> / <code>.as_string()</code> 等收窄。</li><li>所有阻塞操作每 20ms 检查一次 HTTP 处理函数截止时间，请求超时立即中断；后台任务用 <code>*_timeout</code> 或 <code>try_*</code> 避免永久阻塞。</li><li><code>sync.exists(name)</code> / <code>sync.remove(name)</code> 用于检查与清理注册表；名字要用固定常量。</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="cm">// 生产者：后台任务</span>
+<span class="kw">func</span> <span class="fn">worker</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);
+    jobs.<span class="fn">send</span>(<span class="nm">42</span>);
+}
+
+<span class="cm">// 消费者：超时轮询</span>
+task.<span class="fn">spawn</span>(<span class="st">"worker"</span>);
+<span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);
+<span class="kw">match</span> jobs.<span class="fn">recv_timeout</span>(<span class="nm">1000</span>) {
+    some(value) =&gt; { dev.<span class="fn">log</span>(value.<span class="fn">as_int</span>().<span class="fn">unwrap_or</span>(<span class="nm">0</span>).<span class="fn">to_string</span>()); }
+    none =&gt; { dev.<span class="fn">log</span>(<span class="st">"1 秒内没有消息"</span>); }
+}</code></pre></div><h3 id="511-时区UnicodeZIP与邮件">5.11 时区、Unicode、ZIP 与邮件<a class="anchor" href="#511-时区UnicodeZIP与邮件" aria-hidden="true"></a></h3><p><strong>时区</strong>：内置 IANA 数据库（含夏令时），不依赖系统 tzdata。格式串与 <code>time.format</code> 一致，<code>%:z</code> 输出 <code>+08:00</code>。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> time.<span class="fn">format_zone</span>(ts, <span class="st">"%Y-%m-%d %H:%M:%S %:z"</span>, <span class="st">"Asia/Shanghai"</span>) {
+    ok(text) =&gt; { dev.<span class="fn">log</span>(text); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}
+<span class="kw">match</span> time.<span class="fn">parse_zone</span>(<span class="st">"2024-07-01 08:00:00"</span>, <span class="st">"%Y-%m-%d %H:%M:%S"</span>, <span class="st">"Asia/Shanghai"</span>) {
+    ok(ms) =&gt; { dev.<span class="fn">log</span>(ms.<span class="fn">to_string</span>()); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}
+time.<span class="fn">offset</span>(ts, <span class="st">"America/New_York"</span>)     <span class="cm">// ok(-14400)：夏令时已计入</span>
+time.<span class="fn">zone_names</span>() / time.<span class="fn">local_zone</span>()         <span class="cm">// 全部时区名 / 系统时区名</span></code></pre></div><ul><li>未知时区返回 <code>err</code>，不会 panic。</li><li>夏令时回拨的重复时刻取较早一次；春季跳过的时刻返回 <code>err</code>。</li><li><code>time.format</code> / <code>time.parse</code> 使用进程本地时区；需要确定性时用 <code>*_zone</code>。</li></ul><p><strong>Unicode</strong>：<code>len</code> / <code>slice</code> 按码点，字素簇与显示宽度另算。</p><div class="code-block"><pre><code class="lang-rp">str.<span class="fn">normalize</span>(text, <span class="st">"nfc"</span>)        <span class="cm">// nfc / nfd / nfkc / nfkd</span>
+str.<span class="fn">graphemes</span>(text)                 <span class="cm">// vec&lt;string&gt;：emoji、组合音标不拆开</span>
+str.<span class="fn">grapheme_len</span>(text) / str.<span class="fn">width</span>(text)
+
+<span class="st">"👨‍👩‍👧‍👦"</span>.<span class="fn">len</span>()              <span class="cm">// 7（码点）</span>
+<span class="st">"👨‍👩‍👧‍👦"</span>.<span class="fn">grapheme_len</span>()     <span class="cm">// 1（用户可见字符）</span>
+<span class="st">"中文"</span>.<span class="fn">width</span>()               <span class="cm">// 4（终端列数）</span></code></pre></div><p><strong>ZIP</strong>：条目名必须是相对路径，绝对路径、盘符与 <code>..</code> 一律拒绝。</p><div class="code-block"><pre><code class="lang-rp">zip.<span class="fn">create</span>(path, files) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;          <span class="cm">// map&lt;string, string&gt;</span>
+zip.<span class="fn">add</span>(path, files) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+zip.<span class="fn">list</span>(path) -&gt; <span class="ty">result</span>&lt;<span class="ty">vec</span>&lt;zip.entry&gt;, <span class="ty">string</span>&gt;
+zip.<span class="fn">extract</span>(path, dir) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+zip.<span class="fn">read_text</span>(path, entry) / <span class="fn">read_base64</span>(path, entry) / <span class="fn">contains</span>(path, entry)
+
+<span class="kw">match</span> zip.<span class="fn">create</span>(<span class="st">"dist.zip"</span>, [<span class="st">"a.txt"</span> = <span class="st">"hello"</span>, <span class="st">"docs/b.txt"</span> = <span class="st">"world"</span>]) {
+    ok(count) =&gt; { dev.<span class="fn">log</span>(count.<span class="fn">to_string</span>()); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><ul><li><code>zip.entry</code>：<code>name</code> / <code>size</code> / <code>compressed_size</code> / <code>crc32</code> / <code>is_dir</code>。</li><li>解压与读取上限：单条目 256 MiB、单次总计 2 GiB（压缩炸弹防护）。</li><li><code>read_text</code> 要求 UTF-8；二进制用 <code>read_base64</code>。</li></ul><p><strong>邮件</strong>：<code>mail.config()</code> 取默认值后逐字段覆盖，字段类型由编译器校验。</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::mail;
+
+<span class="kw">let</span> <span class="kw">mut</span> cfg: mail.config = mail.<span class="fn">config</span>();
+cfg.host = <span class="st">"smtp.example.com"</span>;
+cfg.port = <span class="nm">587</span>;
+cfg.tls = <span class="st">"starttls"</span>;                  <span class="cm">// none / starttls / ssl</span>
+cfg.username = <span class="st">"bot@example.com"</span>;
+cfg.password = <span class="st">"secret"</span>;                <span class="cm">// 只在有 username 时使用</span>
+cfg.from = <span class="st">"bot@example.com"</span>;
+cfg.to = [<span class="st">"ops@example.com"</span>];
+cfg.subject = <span class="st">"日报"</span>;
+cfg.text = <span class="st">"纯文本正文"</span>;
+
+<span class="kw">match</span> mail.<span class="fn">send</span>(cfg) {
+    ok(_) =&gt; { dev.<span class="fn">log</span>(<span class="st">"sent"</span>); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><ul><li><code>text</code> + <code>html</code> 同时存在时发 <code>multipart/alternative</code>；有附件时外层 <code>multipart/mixed</code>。</li><li>附件用 <code>mail.attachment()</code>：<code>filename</code> 必填，内容取 <code>content_base64</code>（优先）或 <code>path</code>。</li><li><code>timeout_ms</code> 限制单次 socket 操作；<code>mail.send</code> 阻塞，HTTP 处理函数里请放到 <code>task.spawn</code> 的后台函数。</li></ul><h2 id="6-项目与包">6. 项目与包<a class="anchor" href="#6-项目与包" aria-hidden="true"></a></h2><h3 id="61-目录结构">6.1 目录结构<a class="anchor" href="#61-目录结构" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-text">shop/
+├── rip.toml            # 项目清单
+├── main.rp             # 入口（mod shop;）
+├── models/user.rp      # 子模块，mod models;
+├── services/user.rp    # 子模块，mod services;
+├── controllers/*.rp    # 路由处理函数
+├── packages/           # 第三方 Rip 包（vendored）
+├── migrations/         # 数据库迁移
+├── tests/              # 测试
+└── public/             # 静态资源</code></pre></div><p>规则：</p><ul><li>每个文件第一行必须是 <code>mod 目录名;</code>，<code>mod</code> 名与目录名完全一致。</li><li>同目录所有 <code>.rp</code> 属于同一个 mod；子目录是独立的 mod。</li><li>项目模式（存在 <code>rip.toml</code>）会递归合并所有 <code>.rp</code>；跨文件调用不需要 <code>use</code>，直接按函数名调用。</li></ul><h3 id="62-riptoml-模板">6.2 rip.toml 模板<a class="anchor" href="#62-riptoml-模板" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-toml"><span class="kw">[module]</span>
+<span class="fn">name</span> = <span class="st">"shop"</span>
+<span class="fn">version</span> = <span class="st">"0.1.0"</span>
+<span class="fn">entry</span> = <span class="st">"main.rp"</span>
+<span class="kw">
+[build]</span>
+<span class="fn">dir</span> = <span class="st">"dist"</span>
+<span class="fn">name</span> = <span class="st">"shop"</span>
+<span class="cm"># 随产物交付的数据目录</span>
+<span class="fn">copy</span> = [<span class="st">"storage"</span>, <span class="st">"uploads"</span>]
+<span class="kw">
+[compile]</span>
+<span class="cm"># 编译时跳过的数据目录</span>
+<span class="fn">exclude</span> = [<span class="st">"storage"</span>, <span class="st">"uploads"</span>]
+<span class="kw">
+[dependencies]</span>
+<span class="cm"># acme/tools = "^1.2"</span>
+<span class="kw">
+[runtime]</span>
+<span class="fn">log</span> = <span class="st">"chinese"</span>
+<span class="kw">
+[server]</span>
+<span class="fn">workers</span> = <span class="nm">0</span>                 <span class="cm"># 0 = 按 CPU 核数</span>
+<span class="fn">max_connections</span> = <span class="nm">1024</span>
+<span class="fn">max_body_bytes</span> = <span class="nm">8388608</span>
+<span class="fn">request_timeout_ms</span> = <span class="nm">30000</span>
+<span class="fn">health_path</span> = <span class="st">"/healthz"</span>
+<span class="fn">ready_path</span> = <span class="st">"/readyz"</span>
+<span class="fn">metrics_path</span> = <span class="st">""</span>           <span class="cm"># 改成 "/metrics" 暴露指标</span>
+<span class="fn">access_log</span> = true</code></pre></div><h3 id="63-可见性与模块导入">6.3 可见性与模块导入<a class="anchor" href="#63-可见性与模块导入" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">pub</span> <span class="kw">func</span> <span class="fn">create_order</span>(...) -&gt; ... { }     <span class="cm">// 导出给其他模块 / 包</span>
+<span class="kw">pub</span> <span class="kw">type</span> order = [id: <span class="ty">int</span>, total: <span class="ty">int</span>];
+
+<span class="kw">self</span> <span class="kw">func</span> <span class="fn">hash_password</span>(raw: <span class="ty">string</span>) -&gt; <span class="ty">string</span> { }   <span class="cm">// 仅同目录（同 mod）可用</span></code></pre></div><p>导入用 Rust 风格的 <code>use</code>，路径用 <code>::</code> 分段；调用仍保持 Rip 的 <code>模块.函数()</code>：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;              <span class="cm">// 别名默认取最后一段：http</span>
+<span class="kw">use</span> std::sys <span class="kw">as</span> sys;        <span class="cm">// 显式改名</span>
+<span class="kw">use</span> acme::tools;            <span class="cm">// packages/acme/tools/ 下的包，别名 tools</span>
+<span class="kw">use</span> rust::serde_json <span class="kw">as</span> json;</code></pre></div><p>规则：</p><ul><li><code>use</code> 只导入模块，不支持 <code>use std::http::serve;</code> 这种逐项导入（唯一写法）。</li><li>导入后调用写 <code>http.serve(...)</code>，不写 <code>http::serve(...)</code>；方法调用仍是 <code>值.方法()</code>。</li><li>第三方包放在项目根 <code>packages/</code> 下，<code>use</code> 路径就是相对 <code>packages/</code> 的路径（<code>/</code> 换成 <code>::</code>）。</li><li><code>package</code>、<code>import</code> 不是关键字，写出来就是语法错误，没有兼容路径。</li></ul><h2 id="7-编译运行打包发布">7. 编译、运行、打包、发布<a class="anchor" href="#7-编译运行打包发布" aria-hidden="true"></a></h2><div class="table-wrap"><table><thead><tr><th style="text-align:left">命令</th><th style="text-align:left">用途</th></tr></thead><tbody><tr><td style="text-align:left">rip run main.rp</td><td style="text-align:left">直接运行源码；HTTP 默认监听 127.0.0.1</td></tr><tr><td style="text-align:left">rip run main.rp --host 0.0.0.0 --port 8080</td><td style="text-align:left">对外提供服务</td></tr><tr><td style="text-align:left">rip run main.rp --cert a.pem --key a.key</td><td style="text-align:left">启用 HTTPS</td></tr><tr><td style="text-align:left">rip dev main.rp</td><td style="text-align:left">开发模式：启动并热重载</td></tr><tr><td style="text-align:left">rip check main.rp [--json]</td><td style="text-align:left">只做静态检查（CI 门禁）</td></tr><tr><td style="text-align:left">rip build</td><td style="text-align:left">编译原生二进制，输出到 dist/ 与 dist.zip</td></tr><tr><td style="text-align:left">rip build -o release --no-archive</td><td style="text-align:left">指定输出目录 / 不生成 zip</td></tr><tr><td style="text-align:left">rip test [dir|file]</td><td style="text-align:left">运行全部 #[test]</td></tr><tr><td style="text-align:left">rip test --coverage --coverage-min 80</td><td style="text-align:left">语句覆盖率，低于阈值失败</td></tr><tr><td style="text-align:left">rip bench [dir|file]</td><td style="text-align:left">运行 #[bench]，输出耗时统计</td></tr><tr><td style="text-align:left">rip fmt [file|dir] [--check]</td><td style="text-align:left">格式化；--check 只检查</td></tr><tr><td style="text-align:left">rip new &lt;name&gt; [--template http|cli|empty]</td><td style="text-align:left">创建项目骨架（含 GitHub / GitLab CI 模板）</td></tr><tr><td style="text-align:left">rip doc [file] [-o &lt;dir&gt;] [--json]</td><td style="text-align:left">从 /// 注释生成单文件 HTML API 文档</td></tr><tr><td style="text-align:left">rip search &lt;关键词&gt; [--registry URL]</td><td style="text-align:left">搜索包源（--json 输出结构化结果）</td></tr><tr><td style="text-align:left">rip info &lt;包名&gt; [--registry URL]</td><td style="text-align:left">查看包的全部版本、依赖与校验和</td></tr><tr><td style="text-align:left">rip audit [--deny high] [--licenses] [--json]</td><td style="text-align:left">依赖锁定 / 安全公告 / 许可证审计</td></tr><tr><td style="text-align:left">rip migrate up|down|status</td><td style="text-align:left">数据库迁移（migrations/）</td></tr><tr><td style="text-align:left">rip doctor</td><td style="text-align:left">环境与项目自检</td></tr><tr><td style="text-align:left">rip profile [file] [--top N] [--json]</td><td style="text-align:left">函数级耗时报告（调用次数 / 总耗时 / 自身耗时）</td></tr><tr><td style="text-align:left">rip dap [--port N]</td><td style="text-align:left">DAP 调试适配器（stdio 或 TCP）</td></tr><tr><td style="text-align:left">rip build --target &lt;triple&gt;</td><td style="text-align:left">交叉编译到指定 Rust 目标</td></tr></tbody></table></div><p><strong>调试</strong>：编辑器通过 <code>rip dap</code> 接入，支持断点、<code>next</code> / <code>stepIn</code> / <code>stepOut</code>、暂停、调用栈、Locals / Globals 与变量名求值；程序输出走 DAP <code>output</code> 事件，不会破坏协议。会大量输出的服务建议用 <code>rip dap --port 4711</code>，编辑器以 <code>debugServer</code> 方式连接。仓库的 <code>editors/vscode/</code> 提供了语法高亮、LSP（<code>rip lsp</code>）与 DAP 调试配置，<code>rip.executable</code> 指定工具链路径。</p><p><strong>性能</strong>：<code>rip profile main.rp</code> 运行结束后按总耗时排序列出函数，<code>--top 0</code> 显示全部，<code>--json</code> 便于接入 CI；闭包与 <code>std/*</code> 调用也会统计。</p><p><strong>交叉编译</strong>：<code>rip build --target x86_64-unknown-linux-gnu</code> 会用 cargo 为目标平台构建运行时并产出二进制；需要先 <code>rustup target add &lt;triple&gt;</code>，并在 <code>.cargo/config.toml</code> 或 <code>RIP_TARGET_LINKER</code> 配置链接器（sqlite / openssl 等 C 依赖也要有对应的交叉工具链）。目标与宿主相同时仍走内置编译器的快速路径。</p><p><strong>打包产物</strong>：<code>rip build</code> 默认把可执行文件、静态资源、<code>[build] copy</code> 声明的数据目录、README 一起放进 <code>dist/</code>；<code>flat</code> 布局全部在根目录，<code>typed</code> 布局分为 <code>bin/</code>、<code>data/</code>、<code>share/</code>。交付目录里只需一个可执行文件即可运行。</p><p><strong>运行期配置</strong>：可执行文件旁放 <code>config/rip.toml</code> 即可覆盖 <code>[server]</code> / <code>[runtime]</code> / <code>[db]</code> 等参数，无需重新编译；也支持 <code>RIP_SERVER_HOST</code>、<code>RIP_SERVER_WORKERS</code> 等环境变量。</p><h2 id="8-开发自己的独立包">8. 开发自己的独立包<a class="anchor" href="#8-开发自己的独立包" aria-hidden="true"></a></h2><h3 id="81-包的形态">8.1 包的形态<a class="anchor" href="#81-包的形态" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-text">packages/acme/tools/
+├── rip.toml        # [module] name / version 必填
+└── tools.rp        # mod tools;</code></pre></div><p>导入方：</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> acme::tools;
+tools.<span class="fn">slugify</span>(<span class="st">"Hello World"</span>);</code></pre></div><ul><li>目录名（<code>tools</code>）必须等于文件里的 <code>mod tools;</code>。</li><li>只有 <code>pub</code> 函数 / 类型能跨包使用；<code>self func</code> 是包内私有。</li><li>合并编译后所有函数名、类型名全局唯一，命名时带上业务前缀避免冲突。</li></ul><h3 id="82-编写与发布">8.2 编写与发布<a class="anchor" href="#82-编写与发布" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> tools;
+
+<span class="kw">pub</span> <span class="kw">func</span> <span class="fn">slugify</span>(text: <span class="ty">string</span>) -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> str.<span class="fn">lower</span>(str.<span class="fn">replace</span>(str.<span class="fn">trim</span>(text), <span class="st">" "</span>, <span class="st">"-"</span>));
+}
+
+<span class="kw">self</span> <span class="kw">func</span> <span class="fn">internal_note</span>() -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> <span class="st">"not exported"</span>;
+}</code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> check packages/acme/tools/tools.rp     <span class="cm"># 本地检查</span>
+<span class="kw">rip</span> pack packages/acme/tools               <span class="cm"># 生成 tools.rpa 预编译包</span>
+<span class="kw">rip</span> pub packages/acme/tools --registry https://pkg.example.com</code></pre></div><ul><li>发布前必须在 <code>rip.toml</code> 写 <code>[module] name</code> 与合法的 <code>version</code>；同版本重复发布会报错。</li><li>引用方按语义化版本约束声明依赖：</li></ul><div class="code-block"><pre><code class="lang-toml"><span class="kw">[dependencies]</span>
+acme/tools = <span class="st">"^1.2"</span></code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> add acme/tools@^<span class="nm">1</span>.<span class="nm">2</span>      <span class="cm"># 写清单并立即拉取到 packages/</span>
+<span class="kw">rip</span> vendor                   <span class="cm"># 只拉取依赖（离线构建用）</span>
+<span class="kw">rip</span> lock --check             <span class="cm"># CI 校验锁定版本</span></code></pre></div><ul><li><code>rip pack</code> 生成 <code>.rpa</code> 后可以删掉源码，导入方式不变。</li><li>内置 Rust 包用 <code>use rust::serde_json as json;</code>，调用方式与普通包一致。</li></ul><h2 id="9-部署要点">9. 部署要点<a class="anchor" href="#9-部署要点" aria-hidden="true"></a></h2><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> build main.rp -o release
+<span class="cm"># 服务器上：</span>
+./shop --host <span class="nm">0</span>.<span class="nm">0</span>.<span class="nm">0</span>.<span class="nm">0</span> --port <span class="nm">8080</span></code></pre></div><ul><li>对外监听必须显式 <code>--host 0.0.0.0</code>（默认只监听回环地址）。</li><li>HTTPS：<code>--cert</code> 与 <code>--key</code> 必须同时给出。</li><li>内置探针：<code>/healthz</code>（存活）、<code>/readyz</code>（就绪）；<code>metrics_path = "/metrics"</code> 时暴露 Prometheus 指标。</li><li>反代之后开启 <code>trust_proxy = true</code> 或配置 <code>trusted_proxies</code>，客户端 IP 才取 <code>X-Forwarded-For</code>；只开 <code>trust_proxy</code> 未配 <code>trusted_proxies</code> 时启动会打印伪造告警。</li><li>追踪：<code>otlp_endpoint = "http://127.0.0.1:4318"</code> 后自动导出 OTLP/HTTP trace，日志里的 <code>trace_id</code> 可直接关联。</li><li>需要限流时配置 <code>rate_limit</code> / <code>rate_limit_burst</code>，超出返回 <code>429</code>。</li></ul><p>systemd 最小示例：</p><div class="code-block"><pre><code class="lang-ini">[Unit]
+Description=shop
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/shop
+ExecStart=/srv/shop/shop --host 0.0.0.0 --port 8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</code></pre></div><h2 id="10-常见错误速查">10. 常见错误速查<a class="anchor" href="#10-常见错误速查" aria-hidden="true"></a></h2><div class="table-wrap"><table><thead><tr><th style="text-align:left">报错</th><th style="text-align:left">原因</th><th style="text-align:left">修正</th></tr></thead><tbody><tr><td style="text-align:left">mod name 'x' must match directory name 'y'</td><td style="text-align:left"><code>mod</code> 名与目录名不一致</td><td style="text-align:left">把 <code>mod</code> 改成目录名</td></tr><tr><td style="text-align:left">every .rp file in directory ... must start with 'mod ...;'</td><td style="text-align:left">缺少模块声明</td><td style="text-align:left">首行补 <code>mod 目录名;</code></td></tr><tr><td style="text-align:left">type mismatch for 'x': expected string, found int</td><td style="text-align:left">类型不符</td><td style="text-align:left">显式转换 .to_string() / .to_int()</td></tr><tr><td style="text-align:left">cannot assign to immutable variable</td><td style="text-align:left">给 let 变量赋值</td><td style="text-align:left">改成 let mut</td></tr><tr><td style="text-align:left">use of moved value</td><td style="text-align:left">值已按值传参</td><td style="text-align:left">传参前 .clone()，或参数写 read</td></tr><tr><td style="text-align:left">? can only be used in a function returning result</td><td style="text-align:left">函数返回值不是 result</td><td style="text-align:left">改签名或改用 match</td></tr><tr><td style="text-align:left">match is not exhaustive</td><td style="text-align:left">缺 some/none 或 ok/err</td><td style="text-align:left">补齐分支</td></tr><tr><td style="text-align:left">match arm uses '=&gt;', not '='</td><td style="text-align:left">match 分支写成了 =</td><td style="text-align:left">改成 <code>=&gt;</code></td></tr><tr><td style="text-align:left">for requires `for &lt;name&gt; in &lt;vec|map&gt;`</td><td style="text-align:left">用了条件 for 或 C 风格 for</td><td style="text-align:left">改成 <code>while</code> / <code>loop</code> / <code>for x in y</code></td></tr><tr><td style="text-align:left">type vec&lt;T&gt; has no method 'x'</td><td style="text-align:left">方法名拼错</td><td style="text-align:left">查第 4 节方法表</td></tr><tr><td style="text-align:left">v[0] 编译报错</td><td style="text-align:left">vec 不能用下标</td><td style="text-align:left">用 v.0 或 v.at(i)</td></tr><tr><td style="text-align:left">scores["k"] 编译报错</td><td style="text-align:left">map 不能用下标</td><td style="text-align:left">用 scores.get("k")</td></tr><tr><td style="text-align:left">route handler must take exactly one http.request</td><td style="text-align:left">路由函数签名不符</td><td style="text-align:left">改成 func(read req: http.request) -&gt; http.response</td></tr><tr><td style="text-align:left">package "std/x" is not available</td><td style="text-align:left">没导入或模块名错</td><td style="text-align:left">补 <code>use std::x;</code></td></tr><tr><td style="text-align:left">unknown attribute '#[x]'</td><td style="text-align:left">注解名不合法</td><td style="text-align:left">只支持路由、interval、test、bench</td></tr><tr><td style="text-align:left">decimal integer literal cannot initialize string</td><td style="text-align:left">字面量与类型不符</td><td style="text-align:left">加引号或显式转换</td></tr></tbody></table></div><h2 id="11-完整示例">11. 完整示例<a class="anchor" href="#11-完整示例" aria-hidden="true"></a></h2><h3 id="111-JSON-API路由-+-校验-+-JWT">11.1 JSON API（路由 + 校验 + JWT）<a class="anchor" href="#111-JSON-API路由-+-校验-+-JWT" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> api;
+
+<span class="kw">use</span> std::http;
+<span class="kw">use</span> std::jwt;
+<span class="kw">use</span> std::validate;
+
+<span class="kw">static</span> SECRET: <span class="ty">string</span> = <span class="st">"change-me"</span>;
+
+<span class="an">#[post("/login")]</span>
+<span class="kw">func</span> <span class="fn">login</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> name: <span class="ty">string</span> = req.form.<span class="fn">get</span>(<span class="st">"name"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+
+    <span class="kw">match</span> validate.<span class="fn">string_len</span>(name, <span class="nm">1</span>, <span class="nm">32</span>) {
+        <span class="kw">ok</span>(valid) =&gt; {
+            <span class="kw">let</span> token: <span class="ty">string</span> = jwt.<span class="fn">sign</span>([<span class="st">"sub"</span> = valid], SECRET, <span class="nm">3600</span>);
+            <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [token = token]];
+        }
+        <span class="kw">err</span>(message) =&gt; {
+            <span class="kw">return</span> http.response[status = <span class="nm">400</span>, json = [error = message]];
+        }
+    }
+}
+
+<span class="an">#[get("/me")]</span>
+<span class="kw">func</span> <span class="fn">me</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> token: <span class="ty">string</span> = req.headers.<span class="fn">get</span>(<span class="st">"authorization"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+    <span class="kw">match</span> jwt.<span class="fn">verify</span>(token, SECRET) {
+        <span class="kw">ok</span>(claims) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = <span class="kw">some</span>(claims)]; }
+        <span class="kw">err</span>(message) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = message]; }
+    }
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> routes: <span class="ty">vec</span>&lt;http.route&gt; = [];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(routes));
+}</code></pre></div><h3 id="112-分页查询ORM">11.2 分页查询（ORM）<a class="anchor" href="#112-分页查询ORM" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">list_users</span>(<span class="kw">read</span> conn: db.conn, page: <span class="ty">int</span>, size: <span class="ty">int</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">vec</span>&lt;<span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;&gt;, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> offset: <span class="ty">int</span> = (page - <span class="nm">1</span>) * size;
+    <span class="kw">return</span> db.<span class="fn">table</span>(conn, <span class="st">"users"</span>)
+        .<span class="fn">field</span>(<span class="st">"id, name, email"</span>)
+        .<span class="fn">order</span>(<span class="st">"id"</span>, <span class="st">"desc"</span>)
+        .<span class="fn">limit</span>(size)
+        .<span class="fn">offset</span>(offset)
+        .<span class="fn">select</span>();
+}</code></pre></div><h3 id="113-定时任务-+-队列">11.3 定时任务 + 队列<a class="anchor" href="#113-定时任务-+-队列" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-rp"><span class="an">#[interval("30s")]</span>
+<span class="kw">func</span> <span class="fn">send_mail</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">match</span> queue.<span class="fn">reserve</span>(<span class="st">"storage/jobs.db"</span>, <span class="st">"mail"</span>, <span class="nm">60000</span>) {
+        <span class="kw">ok</span>(job) =&gt; {
+            <span class="kw">match</span> job {
+                <span class="kw">some</span>(item) =&gt; {
+                    <span class="cm">// 调用邮件服务；失败时交给队列重试</span>
+                    <span class="kw">if</span> item.attempts &gt; <span class="nm">3</span> {
+                        queue.<span class="fn">fail</span>(<span class="st">"storage/jobs.db"</span>, item.id, <span class="st">"too many attempts"</span>);
+                    } <span class="kw">else</span> {
+                        queue.<span class="fn">ack</span>(<span class="st">"storage/jobs.db"</span>, item.id);
+                    }
+                }
+                <span class="kw">none</span> =&gt; { }
+            }
+        }
+        <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+    }
+}</code></pre></div><h2 id="12-依赖管理rip-vendor">12. 依赖管理：rip vendor<a class="anchor" href="#12-依赖管理rip-vendor" aria-hidden="true"></a></h2><blockquote>本节由《rip vendor 使用指南》合并而来，讲的都是使用者视角的命令与工作流。</blockquote><p><code>rip vendor</code> 把 <code>[dependencies]</code> 声明的第三方包（含传递依赖）补齐到项目的 <code>packages/</code> 目录，并把当前依赖状态固化到 <code>rip.lock</code>。</p><p>一句话：<strong>让一份刚克隆下来的仓库，能在不联网的情况下构建出与原作者完全一致的依赖。</strong></p><hr><h3 id="121-命令">12.1 命令<a class="anchor" href="#121-命令" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor            <span class="cm"># 拉取缺失依赖，生成/更新 rip.lock</span>
+<span class="kw">rip</span> vendor --check    <span class="cm"># 只校验，不写入（CI 用）</span></code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">项目</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">执行目录</td><td style="text-align:left">必须在含 rip.toml 的项目根目录</td></tr><tr><td style="text-align:left">全局选项</td><td style="text-align:left">--offline（不联网，缺包直接报错）、--deny-warnings</td></tr><tr><td style="text-align:left">退出码</td><td style="text-align:left">0 成功；1 依赖或校验失败；2 当前不是 Rip 项目</td></tr></tbody></table></div><p>正常输出：</p><div class="code-block"><pre><code class="lang-text">vendored 2 package(s) into .\packages; wrote .\rip.lock</code></pre></div><p>没有依赖时：</p><div class="code-block"><pre><code class="lang-text">no packages to vendor; wrote .\rip.lock</code></pre></div><p>校验通过时：</p><div class="code-block"><pre><code class="lang-text">rip.lock: ok (2 packages)</code></pre></div><hr><h3 id="122-快速开始">12.2 快速开始<a class="anchor" href="#122-快速开始" aria-hidden="true"></a></h3><p><code>rip.toml</code>：</p><div class="code-block"><pre><code class="lang-toml"><span class="kw">[module]</span>
+<span class="fn">name</span> = <span class="st">"app"</span>
+<span class="fn">version</span> = <span class="st">"0.1.0"</span>
+<span class="fn">entry</span> = <span class="st">"main.rp"</span>
+<span class="kw">
+[registry]</span>
+<span class="fn">source</span> = <span class="st">"https://registry.example.com"</span>
+<span class="kw">
+[dependencies]</span>
+<span class="st">"acme/tools"</span> = <span class="st">"^1.2"</span></code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor</code></pre></div><p>执行后：</p><div class="code-block"><pre><code class="lang-text">app/
+├── rip.toml
+├── rip.lock
+└── packages/
+    └── acme/tools/
+        ├── .rip-registry     # 由 rip 写入的来源标记
+        ├── rip.toml
+        └── tools.rp</code></pre></div><p>把 <code>packages/</code> 与 <code>rip.lock</code> 一起提交，仓库即可离线构建。</p><hr><h3 id="123-它做了什么">12.3 它做了什么<a class="anchor" href="#123-它做了什么" aria-hidden="true"></a></h3><p><code>rip vendor</code> 依次执行三步（与 <code>rip lock</code> 共用同一实现）：</p><ul><li>本地已有且版本满足约束 → 不访问网络。</li><li>本地缺失或不满足 → 从 <code>[registry]</code> 拉取。</li><li>锁文件里已有该包时优先用锁定版本，保证可复现。</li></ul><ol><li><strong>校验约束</strong>：版本区间、同一包的多处约束是否冲突、传递依赖是否完整。</li><li><strong>固化结果</strong>：扫描 <code>packages/</code>，按<strong>包目录</strong>聚合，写入 <code>rip.lock</code>。</li></ol><p><code>packages/</code> 本身就是 Rip 的 vendored 目录，所以“拉取”和“锁定”在这里是同一个动作。</p><hr><h3 id="124-锁文件格式">12.4 锁文件格式<a class="anchor" href="#124-锁文件格式" aria-hidden="true"></a></h3><div class="code-block"><pre><code class="lang-toml"><span class="cm"># generated by 'rip lock'; do not edit</span>
+<span class="fn">version</span> = <span class="nm">1</span>
+<span class="fn">registry</span> = <span class="st">"https://registry.example.com"</span>   <span class="cm"># 仅当配置了 [registry] source</span>
+<span class="kw">
+[[package]</span>]
+<span class="fn">name</span> = <span class="st">"acme/tools"</span>                <span class="cm"># 包目录相对 packages/ 的路径</span>
+<span class="fn">version</span> = <span class="st">"1.4.0"</span>                  <span class="cm"># 来自包内 rip.toml 的 [module] version</span>
+<span class="fn">source</span> = <span class="st">"packages/acme/tools"</span>     <span class="cm"># 本地目录</span>
+<span class="fn">sha256</span> = <span class="st">"26c1200f1fb6…"</span>           <span class="cm"># 包目录内全部文件的摘要</span>
+<span class="fn">deps</span> = [<span class="st">"acme/base"</span>]               <span class="cm"># 直接依赖的包名</span></code></pre></div><p>几条约定：</p><ul><li><strong>一个包目录一条记录</strong>。同一目录下的多个 <code>.rp</code> 属于同一个包，不会重复出现。</li><li><strong>包名 = 目录相对路径</strong>，与 <code>use acme::tools;</code>、<code>[dependencies]</code> 的键一致。</li><li><strong>摘要覆盖整目录</strong>：按相对路径排序后，把「路径 + 文件内容」一起做 SHA-256，多文件包也能稳定校验。</li><li>不要手工编辑；需要更新时重新执行 <code>rip vendor</code>。</li></ul><hr><h3 id="125-校验规则">12.5 校验规则<a class="anchor" href="#125-校验规则" aria-hidden="true"></a></h3><p><code>rip vendor --check</code>，以及 <code>rip run</code> / <code>rip dev</code> / <code>rip build</code> / <code>rip check</code> / <code>rip test</code>，都会在读取项目时校验锁文件：</p><div class="table-wrap"><table><thead><tr><th style="text-align:left">情况</th><th style="text-align:left">提示</th></tr></thead><tbody><tr><td style="text-align:left">锁文件缺失</td><td style="text-align:left">rip.lock is missing; run 'rip vendor' to generate it</td></tr><tr><td style="text-align:left">包内容被改动</td><td style="text-align:left">package 'x' does not match rip.lock</td></tr><tr><td style="text-align:left">包版本变化</td><td style="text-align:left">package 'x' version changed from 'a' to 'b'</td></tr><tr><td style="text-align:left">直接依赖列表变化</td><td style="text-align:left">package 'x' dependency list changed</td></tr><tr><td style="text-align:left">锁里的包不见了</td><td style="text-align:left">package 'x' from rip.lock is missing</td></tr><tr><td style="text-align:left">packages/ 里多了未记录的包</td><td style="text-align:left">package 'x' is not recorded in rip.lock</td></tr></tbody></table></div><p>出现以上任一提示，重新执行 <code>rip vendor</code> 即可。</p><blockquote>注意：<code>--check</code> 要求锁文件已经存在。首次克隆的仓库请先跑一次 <code>rip vendor</code>。</blockquote><hr><h3 id="126-典型工作流">12.6 典型工作流<a class="anchor" href="#126-典型工作流" aria-hidden="true"></a></h3><h4 id="首次引入依赖">首次引入依赖<a class="anchor" href="#首次引入依赖" aria-hidden="true"></a></h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> add acme/tools@^<span class="nm">1</span>.<span class="nm">2</span>   <span class="cm"># 写入 rip.toml 并立即拉取</span>
+<span class="kw">rip</span> vendor                <span class="cm"># 生成 rip.lock</span></code></pre></div><p>提交 <code>rip.toml</code>、<code>rip.lock</code> 与 <code>packages/</code>。</p><h4 id="新克隆仓库">新克隆仓库<a class="anchor" href="#新克隆仓库" aria-hidden="true"></a></h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor     <span class="cm"># 还原 packages/ 与 rip.lock</span>
+<span class="kw">rip</span> run main.rp</code></pre></div><p>若 <code>packages/</code> 已随仓库提交，这一步不会访问网络。</p><h4 id="升级依赖">升级依赖<a class="anchor" href="#升级依赖" aria-hidden="true"></a></h4><div class="code-block"><pre><code class="lang-bash"><span class="cm"># 修改 rip.toml 的约束，例如 ^1.2 -&gt; ^1.3</span>
+<span class="kw">rip</span> vendor</code></pre></div><ul><li>旧锁定版本仍满足新约束时，沿用锁定版本（保持可复现）。</li><li>旧版本不满足新约束时，重新从包源按依赖约束做回溯求解（同一包只选一个版本）；无解时报出每条约束的来源。</li></ul><h4 id="CI">CI<a class="anchor" href="#CI" aria-hidden="true"></a></h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor --check</code></pre></div><p>只校验、不写入；锁文件与 <code>packages/</code> 不一致时返回非零退出码。</p><p>安全公告与许可证检查：<code>rip audit --deny high --licenses</code>（公告来源 <code>[registry] advisories</code> / <code>RIP_ADVISORIES</code> / <code>&lt;source&gt;/v1/advisories.json</code>）；查看包源用 <code>rip search &lt;关键词&gt;</code> 与 <code>rip info &lt;包名&gt;</code>。</p><p>完全离线环境：</p><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor --check --offline</code></pre></div><hr><h3 id="127-与包源离线的关系">12.7 与包源、离线的关系<a class="anchor" href="#127-与包源离线的关系" aria-hidden="true"></a></h3><ul><li>包源由 <code>[registry] source</code> 指定，支持 <code>https://</code>、<code>file://</code> 与本地目录；<code>http://</code> 仅允许 <code>localhost</code> / <code>127.0.0.1</code> / <code>::1</code>（本地开发），其它 http 源直接报错拒绝。远端源的下载必须带索引 <code>sha256</code>，缺摘要即拒绝。未配置时使用公共包源 <code>https://registry.rip-lang.dev</code>，可用环境变量 <code>RIP_REGISTRY</code> 覆盖（<code>rip pub</code> 仍需显式指定目标，不回退公共源）；依赖已全部 vendored 时不会访问包源。</li><li>访问令牌：<code>[registry] token_env = "MY_TOKEN"</code> 指定环境变量名，未指定时读 <code>RIP_REGISTRY_TOKEN</code>。</li><li><code>--offline</code> 或 <code>[registry] offline = true</code> 时不访问网络；此时缺失依赖会直接报错：</li></ul><div class="code-block"><pre><code class="lang-text">  error: package 'acme/tools' is not vendored and network access is disabled</code></pre></div><ul><li>由 rip 拉取的包目录内有 <code>.rip-registry</code> 标记；<strong>手工放进 <code>packages/</code> 的包不会被静默覆盖</strong>，需要先删除或调整为匹配的版本。</li></ul><hr><h3 id="128-常见问题">12.8 常见问题<a class="anchor" href="#128-常见问题" aria-hidden="true"></a></h3><p><strong>Q：<code>packages/</code> 要不要提交到仓库？</strong></p><p>两种都可以：</p><ul><li>提交：完全离线可构建，仓库体积更大；</li><li>不提交：靠 <code>rip vendor</code> 从包源还原，需要能访问 <code>[registry]</code>。</li></ul><p><strong>Q：<code>rip vendor</code> 和 <code>rip lock</code> 有什么区别？</strong></p><p>解析与写入逻辑完全一致。<code>rip vendor</code> 的输出侧重“vendored 了多少个包”，语义上强调把依赖固化到 <code>packages/</code>；两者生成的锁文件逐字节相同。</p><p><strong>Q：为什么改了约束却没有升级？</strong></p><p>因为锁定版本仍满足新约束。要强制重新选版，先把 <code>rip.lock</code> 里对应记录删除（或整体删除锁文件）再执行 <code>rip vendor</code>。</p><p><strong>Q：提示 <code>already exists under packages/ ... was not fetched by rip</code>？</strong></p><p>那个目录是手工放置的。删除它让 <code>rip vendor</code> 重新拉取，或把 <code>[dependencies]</code> 的约束调整成与该目录内的版本一致。</p><p><strong>Q：提示 <code>checksum mismatch</code>？</strong></p><p>包源返回的 zip 与索引里的 <code>sha256</code> 不一致。确认包源内容是否被替换，或联系包源维护者。</p><p><strong>Q：如何发布自己的包？</strong></p><p><code>rip vendor</code> 只负责消费依赖。发布用 <code>rip pub</code>，见本手册第 7 章「编译、运行、打包、发布」。</p>
+</div>
+</main>
+<button class="to-top" id="toTop" title="回到顶部">↑</button>
+<script>
+(function(){
+  const content=document.getElementById('content');
+  const toc=document.getElementById('toc');
+  const results=document.getElementById('results');
+  const input=document.getElementById('q');
+  const headings=[...content.querySelectorAll('h1,h2,h3')].filter(h=>h.tagName!=='H1');
+
+  /* 目录 */
+  const tocLinks=[];
+  headings.forEach(h=>{
+    const li=document.createElement('li');
+    const a=document.createElement('a');
+    a.href='#'+h.id;
+    a.textContent=h.textContent.replace('#','').trim();
+    a.className='lv'+h.tagName[1];
+    li.appendChild(a);toc.appendChild(li);tocLinks.push({a,h});
+  });
+
+  /* 搜索索引：标题 + 所属小节正文 */
+  const sections=headings.map((h,i)=>{
+    const parts=[];
+    let node=h.nextElementSibling;
+    const limit=i+1<headings.length?headings[i+1]:null;
+    while(node&&node!==limit){
+      parts.push(node.innerText||'');
+      node=node.nextElementSibling;
+    }
+    return {h,title:h.textContent.replace('#','').trim(),body:parts.join(' ').replace(/\s+/g,' ')};
+  });
+
+  function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function clip(text,index,length){
+    const start=Math.max(0,index-34);
+    return (start>0?'…':'')+text.slice(start,index+length+50)+'…';
+  }
+  function mark(text,q){
+    const i=text.toLowerCase().indexOf(q);
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<b>'+esc(text.slice(i,i+q.length))+'</b>'+esc(text.slice(i+q.length));
+  }
+
+  let active=-1;
+  function close(){results.hidden=true;results.innerHTML='';active=-1;}
+  function search(){
+    const q=input.value.trim().toLowerCase();
+    if(!q){close();return;}
+    const hits=[];
+    for(const s of sections){
+      const inTitle=s.title.toLowerCase().includes(q);
+      const bodyIndex=s.body.toLowerCase().indexOf(q);
+      if(!inTitle&&bodyIndex<0)continue;
+      hits.push({s,inTitle,bodyIndex,score:inTitle?2:1});
+    }
+    hits.sort((a,b)=>b.score-a.score||a.s.title.localeCompare(b.s.title));
+    results.innerHTML='';
+    if(!hits.length){
+      results.innerHTML='<div class="empty">没有匹配的章节</div>';
+    }else{
+      hits.slice(0,20).forEach((hit,i)=>{
+        const a=document.createElement('a');
+        a.className='result'+(i===0?' active':'');
+        a.href='#'+hit.s.h.id;
+        const snippet=hit.inTitle?hit.s.body.slice(0,70):clip(hit.s.body,hit.bodyIndex,q.length);
+        a.innerHTML='<div class="rt">'+mark(hit.s.title,q)+'</div>'+
+                    '<div class="rp">'+(snippet?mark(snippet,q):'')+'</div>';
+        a.addEventListener('click',()=>{close();input.blur();});
+        results.appendChild(a);
+      });
+    }
+    results.hidden=false;active=0;
+  }
+  input.addEventListener('input',search);
+  input.addEventListener('focus',()=>{if(input.value.trim())search();});
+  input.addEventListener('keydown',e=>{
+    const items=[...results.querySelectorAll('.result')];
+    if(e.key==='Escape'){input.value='';close();input.blur();return;}
+    if(!items.length)return;
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      active=(active+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
+      items.forEach((el,i)=>el.classList.toggle('active',i===active));
+      items[active].scrollIntoView({block:'nearest'});
+    }else if(e.key==='Enter'){
+      e.preventDefault();
+      const target=items[active]||items[0];
+      if(target){target.click();location.hash=target.getAttribute('href');}
+      close();
+    }
+  });
+  document.addEventListener('click',e=>{
+    if(!results.contains(e.target)&&e.target!==input)close();
+  });
+  document.addEventListener('keydown',e=>{
+    const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if(e.key==='/'&&!typing){e.preventDefault();input.focus();input.select();}
+  });
+
+  /* 滚动：高亮当前小节 + 进度条 + 回到顶部 */
+  const linksById=new Map(tocLinks.map(x=>[x.h.id,x]));
+  let ticking=false;
+  function onScroll(){
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(()=>{
+      ticking=false;
+      const y=window.scrollY+90;
+      let current=null;
+      for(const h of headings){if(h.offsetTop<=y)current=h;else break;}
+      tocLinks.forEach(x=>x.a.classList.toggle('active',current&&x.h===current));
+      const top=document.getElementById('toTop');
+      top.classList.toggle('show',window.scrollY>600);
+      const max=document.documentElement.scrollHeight-window.innerHeight;
+      document.getElementById('progress').style.width=(max>0?window.scrollY/max*100:0)+'%';
+    });
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* 复制按钮 */
+  document.querySelectorAll('.code-block').forEach(block=>{
+    const btn=document.createElement('button');
+    btn.className='copy';btn.type='button';btn.textContent='复制';
+    btn.addEventListener('click',()=>{
+      const code=block.querySelector('code');
+      const text=code?code.innerText:'';
+      const done=()=>{btn.textContent='已复制';btn.classList.add('done');
+        setTimeout(()=>{btn.textContent='复制';btn.classList.remove('done');},1200);};
+      if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(text).then(done).catch(()=>fallback(text,done));
+      }else{fallback(text,done);}
+    });
+    block.appendChild(btn);
+  });
+  function fallback(text,done){
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* 标题锚点点击后闪烁定位 */
+  document.querySelectorAll('.anchor').forEach(a=>{
+    a.addEventListener('click',()=>{
+      const h=a.parentElement;
+      h.classList.remove('flash');void h.offsetWidth;h.classList.add('flash');
+    });
+  });
+
+  /* 主题切换 */
+  const themeBtn=document.getElementById('theme');
+  const saved=localStorage.getItem('rip-doc-theme');
+  if(saved)document.documentElement.dataset.theme=saved;
+  themeBtn.addEventListener('click',()=>{
+    const current=document.documentElement.dataset.theme
+      ||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const next=current==='dark'?'light':'dark';
+    document.documentElement.dataset.theme=next;
+    localStorage.setItem('rip-doc-theme',next);
+  });
+
+  /* 移动端目录 */
+  document.getElementById('menu').addEventListener('click',()=>{
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+  toc.addEventListener('click',e=>{
+    if(e.target.tagName==='A'&&innerWidth<=1000){
+      document.getElementById('sidebar').classList.remove('open');
+    }
+  });
+  document.getElementById('toTop').addEventListener('click',()=>{
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  if(location.hash){
+    const target=document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if(target){setTimeout(()=>target.scrollIntoView({block:'start'}),30);}
+  }
+})();
+</script>
+</body>
+</html>

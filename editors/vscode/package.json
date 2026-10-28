@@ -1,0 +1,114 @@
+{
+  "name": "rip-lang",
+  "displayName": "Rip",
+  "description": "Rip language support: syntax highlighting, LSP diagnostics/completion, DAP debugging.",
+  "version": "0.1.0",
+  "publisher": "rip-lang",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onLanguage:rip"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "rip",
+        "aliases": [
+          "Rip",
+          "rip"
+        ],
+        "extensions": [
+          ".rp"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rip",
+        "scopeName": "source.rip",
+        "path": "./syntaxes/rip.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Rip",
+      "properties": {
+        "rip.executable": {
+          "type": "string",
+          "default": "rip",
+          "description": "rip 可执行文件路径（需包含 lsp 与 dap 子命令）。"
+        }
+      }
+    },
+    "debuggers": [
+      {
+        "type": "rip",
+        "label": "Rip",
+        "languages": [
+          "rip"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "入口 .rp 文件。",
+                "default": "${file}"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "description": "传给程序的命令行参数。"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "default": false,
+                "description": "在第一条语句前暂停。"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "rip",
+            "request": "launch",
+            "name": "Rip: Launch",
+            "program": "${file}",
+            "args": [],
+            "stopOnEntry": false
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Rip: Launch",
+            "description": "调试当前 .rp 文件",
+            "body": {
+              "type": "rip",
+              "request": "launch",
+              "name": "Rip: Launch",
+              "program": "^\"\\${file}\"",
+              "args": [],
+              "stopOnEntry": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

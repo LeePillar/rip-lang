@@ -1,0 +1,20 @@
+mod support;
+
+use std::db;
+use std::http;
+
+// 注解路由的处理器只接收 http.request，数据库连接由应用自己打开。
+// 这里按请求打开一次连接，处理完立即关闭，避免连接句柄堆积。
+
+func with_conn(read req: http.request, action: func(db.conn, http.request) -> http.response) -> http.response {
+    match db.open(config_dsn()) {
+        ok(conn) => {
+            let response: http.response = action(conn, req);
+            conn.close();
+            return response;
+        }
+        err(message) => {
+            return json_fail(500, "database unavailable: " + message);
+        }
+    }
+}

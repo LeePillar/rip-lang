@@ -1,0 +1,12 @@
+[package]
+name = "rp-lsp"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rp-ast = { path = "../rp-ast" }
+rp-lexer = { path = "../rp-lexer" }
+rp-parser = { path = "../rp-parser" }
+rp-types = { path = "../rp-types" }
+rp-ownership = { path = "../rp-ownership" }
+serde_json = "1"

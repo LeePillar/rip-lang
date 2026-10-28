@@ -1,0 +1,69 @@
+mod examples;
+
+// 方法 + 接口验证：静态分派（具体类型）、动态分派（接口）、write 接收者。
+
+use std::dev;
+
+type shape = interface {
+    func area() -> float
+    func name() -> string
+    write func scale(factor: float) -> void
+}
+
+type circle = [radius: float];
+type square = [side: float];
+
+func circle.area(read c: circle) -> float {
+    return 3.0 * c.radius * c.radius;
+}
+
+func circle.name(read c: circle) -> string {
+    return "circle";
+}
+
+func circle.scale(write c: circle, factor: float) -> void {
+    c.radius = c.radius * factor;
+}
+
+func square.area(read s: square) -> float {
+    return s.side * s.side;
+}
+
+func square.name(read s: square) -> string {
+    return "square";
+}
+
+func square.scale(write s: square, factor: float) -> void {
+    s.side = s.side * factor;
+}
+
+func describe(read s: shape) -> string {
+    return s.name() + " area=" + s.area().to_string();
+}
+
+func main() -> void {
+    let mut c: circle = [radius = 2.0];
+    dev.assert(c.area() == 12.0);
+    c.scale(2.0);
+    dev.assert(c.area() == 48.0);
+    dev.assert(c.name() == "circle");
+
+    let shapes: vec<shape> = [circle[radius = 1.0], square[side = 3.0]];
+    let mut total: float = 0.0;
+    for s in shapes {
+        total = total + s.area();
+    }
+    dev.assert(total == 12.0);
+    dev.assert(describe(circle[radius = 1.0]) == "circle area=3");
+    dev.assert(describe(square[side = 2.0]) == "square area=4");
+
+    let sq: square = [side = 4.0];
+    dev.assert(sq.area() == 16.0);
+
+    // 通过接口变量调用 write 方法：运行时按类名分派到 circle.scale。
+    let mut flexible: shape = circle[radius = 1.0];
+    flexible.scale(3.0);
+    dev.assert(flexible.area() == 27.0);
+
+    dev.log("methods ok");
+}

@@ -1,0 +1,83 @@
+# 发布流水线：推送 `v*` 标签时
+#   1. 在 Windows / Linux / macOS 各构建一份 `rip`，跑一遍 release 测试；
+#   2. 用 `gh release create` 把三平台产物挂到 GitHub Release。
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  binaries:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            ext: .exe
+            archive: rip-windows-x64.zip
+          - name: linux-x64
+            os: ubuntu-latest
+            ext: ""
+            archive: rip-linux-x64.tar.gz
+          - name: macos-arm64
+            os: macos-latest
+            ext: ""
+            archive: rip-macos-arm64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev cmake
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release -p rp-cli
+
+      - name: Release tests
+        run: cargo test --release --workspace
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path "target/release/rip${{ matrix.ext }}" -DestinationPath "${{ matrix.archive }}" -Force
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf "${{ matrix.archive }}" -C target/release rip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.archive }}
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: [binaries]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: artifacts
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" artifacts/* --generate-notes --title "$GITHUB_REF_NAME"

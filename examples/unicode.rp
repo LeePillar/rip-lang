@@ -1,0 +1,47 @@
+mod examples;
+
+// Unicode：归一化、字素簇、显示宽度。
+
+use std::dev;
+use std::str;
+
+func main() -> void {
+    // NFKC 把全角字符折成半角，搜索 / 去重前常用。
+    match str.normalize("ＡＢＣ　１２３", "nfkc") {
+        ok(text) => { dev.assert(text == "ABC 123"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    // 未知形式返回 err。
+    match str.normalize("abc", "nfx") {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("normalization")); }
+    }
+
+    // 字素簇：一个 emoji 家庭由多个码点组成，但用户看到的是一个字符。
+    let family: string = "👨‍👩‍👧‍👦";
+    dev.assert(family.len() == 7);
+    dev.assert(family.grapheme_len() == 1);
+    dev.assert(str.grapheme_len(family) == 1);
+    let parts: vec<string> = family.graphemes();
+    dev.assert(parts.len() == 1);
+
+    // 预组合字符与普通字符一样按一个字素簇计数。
+    let cafe: string = "café";
+    dev.assert(cafe.len() == 4);
+    dev.assert(cafe.grapheme_len() == 4);
+
+    // 显示宽度：中日韩全角字符占 2 列。
+    dev.assert("abc".width() == 3);
+    dev.assert("中文".width() == 4);
+    dev.assert(str.width("中文 abc") == 8);
+
+    // 方法版与函数版等价，便于链式调用。
+    let text: string = "  中文  ";
+    dev.assert(text.trim().width() == 4);
+    match "Ａ".normalize("nfkc") {
+        ok(normalized) => { dev.assert(normalized == "A"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    dev.log("unicode ok");
+}

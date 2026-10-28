@@ -1,0 +1,7 @@
+[package]
+name = "rp-lexer"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rp-ast = { path = "../rp-ast" }

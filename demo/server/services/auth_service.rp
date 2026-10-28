@@ -1,0 +1,78 @@
+mod services;
+
+use std::db;
+use std::time;
+
+// 认证业务：登录、退出、当前用户。
+
+func auth_login(read conn: db.conn, read account: string, read password: string) -> service_result {
+    if account.len() == 0 {
+        return svc_fail(400, "account is required");
+    }
+    if password.len() == 0 {
+        return svc_fail(400, "password is required");
+    }
+
+    match user_find_login(conn, account) {
+        ok(row) => {
+            match row {
+                some(user) => {
+                    let stored: string = user.get("password").unwrap_or("").as_string().unwrap_or("");
+                    if !verify_password(password, stored) {
+                        return svc_fail(401, "account or password is incorrect");
+                    }
+                    let status: string = user.get("status").unwrap_or("").as_string().unwrap_or("");
+                    if status != "active" {
+                        return svc_fail(403, "account is disabled");
+                    }
+
+                    let id: int = user.get("id").unwrap_or(0).as_int().unwrap_or(0);
+                    let email: string = user.get("email").unwrap_or("").as_string().unwrap_or("");
+                    let now: int = time.timestamp_ms();
+                    let expires_at: int = now + config_session_ttl();
+                    let token: string = make_token(id, email, now);
+
+                    match session_replace(conn, id, token, expires_at, time.now().to_string()) {
+                        ok(count) => {
+                            if count == 0 {
+                                return svc_fail(500, "session insert failed");
+                            }
+                            let mut profile: map<string, any> = user.clone();
+                            profile.delete("password");
+                            return svc_ok([token = token, expires_at = expires_at, user = profile]);
+                        }
+                        err(message) => { return svc_fail(500, "database: " + message); }
+                    }
+                }
+                none => { return svc_fail(401, "account or password is incorrect"); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+    return svc_fail(500, "unreachable");
+}
+
+func auth_logout(read conn: db.conn, read token: string) -> service_result {
+    if token.len() > 0 {
+        match session_remove(conn, token) {
+            ok(count) => { }
+            err(message) => { return svc_fail(500, "database: " + message); }
+        }
+    }
+    return svc_ok([logged_out = true]);
+}
+
+func auth_me(read conn: db.conn, read token: string) -> service_result {
+    if token.len() == 0 {
+        return svc_fail(401, "unauthorized");
+    }
+    match session_find_user(conn, token, time.timestamp_ms()) {
+        ok(row) => {
+            match row {
+                some(user) => { return svc_ok(user); }
+                none => { return svc_fail(401, "unauthorized"); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+}

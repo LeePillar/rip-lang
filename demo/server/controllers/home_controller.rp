@@ -1,0 +1,27 @@
+mod controllers;
+
+use std::fs;
+use std::http;
+
+// 首页：返回 Vue 单页入口。
+
+#[get("/")]
+func index_page(read req: http.request) -> http.response {
+    let page: string = config_static_root() + "/index.html";
+    match fs.read_file(page) {
+        ok(content) => {
+            return http.response[
+                status = 200,
+                headers = ["Content-Type" = "text/html; charset=utf-8"],
+                body = content
+            ];
+        }
+        err(message) => {
+            return http.response[
+                status = 500,
+                headers = ["Content-Type" = "text/plain; charset=utf-8"],
+                body = "index.html not found: " + message
+            ];
+        }
+    }
+}

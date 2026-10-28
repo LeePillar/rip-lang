@@ -1,0 +1,94 @@
+mod controllers;
+
+use std::db;
+use std::http;
+
+// 用户控制器：注解声明路由，先过鉴权中间件，再调用业务服务。
+
+func guard_success(read guard: service_result) -> bool {
+    return guard.get("success").unwrap_or(false).as_bool().unwrap_or(false);
+}
+
+func guard_user_id(read guard: service_result) -> int {
+    let payload: option<any> = guard.get("data");
+    match payload {
+        some(value) => {
+            match value.as_map() {
+                some(user) => { return user.get("id").unwrap_or(0).as_int().unwrap_or(0); }
+                none => { }
+            }
+        }
+        none => { }
+    }
+    return 0;
+}
+
+#[get("/api/users")]
+func users_index_action(read req: http.request) -> http.response {
+    return with_conn(req, users_index_handle);
+}
+
+func users_index_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    let page: int = query_int(req, "page", 1);
+    let limit: int = query_int(req, "limit", 10);
+    let keyword: string = query_text(req, "keyword");
+    let status: string = query_text(req, "status");
+    return respond(user_list(conn, page, limit, keyword, status));
+}
+
+#[get("/api/users/:id")]
+func users_show_action(read req: http.request) -> http.response {
+    return with_conn(req, users_show_handle);
+}
+
+func users_show_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    return respond(user_detail(conn, path_int(req, "id")));
+}
+
+#[post("/api/users")]
+func users_create_action(read req: http.request) -> http.response {
+    return with_conn(req, users_create_handle);
+}
+
+func users_create_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    return respond(user_create(conn, body_map(req)));
+}
+
+#[put("/api/users/:id")]
+func users_update_action(read req: http.request) -> http.response {
+    return with_conn(req, users_update_handle);
+}
+
+func users_update_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    return respond(user_update(conn, path_int(req, "id"), body_map(req)));
+}
+
+#[delete("/api/users/:id")]
+func users_delete_action(read req: http.request) -> http.response {
+    return with_conn(req, users_delete_handle);
+}
+
+func users_delete_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let guard: service_result = api_guard(conn, req);
+    if !guard_success(guard) {
+        return respond(guard);
+    }
+    let me_id: int = guard_user_id(guard);
+    return respond(user_delete(conn, me_id, path_int(req, "id")));
+}

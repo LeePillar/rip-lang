@@ -1,0 +1,36 @@
+mod controllers;
+
+use std::db;
+use std::http;
+
+// 认证控制器：注解声明路由，只做请求解析与响应组装。
+
+#[post("/api/login")]
+func auth_login_action(read req: http.request) -> http.response {
+    return with_conn(req, auth_login_handle);
+}
+
+func auth_login_handle(read conn: db.conn, read req: http.request) -> http.response {
+    let body: map<string, any> = body_map(req);
+    let account: string = field_string(body, "account");
+    let password: string = field_string(body, "password");
+    return respond(auth_login(conn, account, password));
+}
+
+#[post("/api/logout")]
+func auth_logout_action(read req: http.request) -> http.response {
+    return with_conn(req, auth_logout_handle);
+}
+
+func auth_logout_handle(read conn: db.conn, read req: http.request) -> http.response {
+    return respond(auth_logout(conn, request_token(req)));
+}
+
+#[get("/api/me")]
+func auth_me_action(read req: http.request) -> http.response {
+    return with_conn(req, auth_me_handle);
+}
+
+func auth_me_handle(read conn: db.conn, read req: http.request) -> http.response {
+    return respond(auth_me(conn, request_token(req)));
+}

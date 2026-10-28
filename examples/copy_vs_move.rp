@@ -1,0 +1,17 @@
+mod examples;
+
+use std::dev;
+
+func take_int(n: int) -> int { return n * 2; }
+func take_string(s: string) -> int { return s.len(); }
+
+func main() -> void {
+    let a: int = 10;
+    let b: int = take_int(a);
+    dev.log("a still = " + a.to_string());     // Copy，a 仍可用
+
+    let s: string = "hello";
+    let len: int = take_string(s);
+    dev.log("len = " + len.to_string());
+    // dev.log(s);                              // Move，s 已失效
+}

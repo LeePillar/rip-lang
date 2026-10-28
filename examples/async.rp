@@ -1,0 +1,49 @@
+mod examples;
+
+use std::time;
+
+// `async func` / `await`：任务在独立运行时执行，`await` 取回结果。
+async func sum_to(n: int) -> int {
+    let mut total: int = 0;
+    let mut i: int = 1;
+    while i <= n {
+        total = total + i;
+        i = i + 1;
+    }
+    return total;
+}
+
+// 嵌套 async：父任务在等待子任务时会让出执行权（协助调度）。
+async func nested() -> int {
+    let inner: task<int> = sum_to(10);
+    return await inner + 1;
+}
+
+async func nap() -> int {
+    time.sleep(400);
+    return 1;
+}
+
+func main() -> void {
+    // 先启动两个任务，再依次等待，两个任务可以并行执行。
+    let a: task<int> = sum_to(100);
+    let b: task<int> = sum_to(200);
+    let x: int = await a;
+    let y: int = await b;
+    print(x + y);
+
+    let mut total: int = 0;
+    let t: task<int> = nested();
+    total = await t;
+    print(total);
+
+    // 并发验证：两个 400ms 任务并行，总耗时明显小于串行的 800ms。
+    let start: int = time.timestamp_ms();
+    let p: task<int> = nap();
+    let q: task<int> = nap();
+    let sum: int = await p + await q;
+    let elapsed: int = time.timestamp_ms() - start;
+    print(sum);
+    print(elapsed < 750);
+    print("async ok");
+}

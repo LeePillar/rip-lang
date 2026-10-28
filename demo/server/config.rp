@@ -1,0 +1,28 @@
+mod server;
+
+use std::fs;
+use std::sys;
+
+// 配置：DSN、会话有效期与静态资源根目录。
+
+func config_dsn() -> string {
+    return sys.env_get("RIP_DB").unwrap_or("storage/app.db");
+}
+
+// 静态资源根目录：源码运行时是 ../client；打包后的 dist 里是 ./client。
+func config_static_root() -> string {
+    if fs.exists("client") {
+        return "client";
+    }
+    return "../client";
+}
+
+func config_session_ttl() -> int {
+    return 86400000;
+}
+
+// 上传目录：RIP_UPLOAD_DIR 优先；缺省为运行目录下的 uploads。
+// 打包后仍在产物目录内，按同一相对路径保存，重启不丢。
+func config_upload_dir() -> string {
+    return sys.env_get("RIP_UPLOAD_DIR").unwrap_or("uploads");
+}

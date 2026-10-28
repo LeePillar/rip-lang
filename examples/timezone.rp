@@ -1,0 +1,69 @@
+mod examples;
+
+// 时区：IANA 时区名、夏令时偏移、按时区格式化 / 解析。
+
+use std::dev;
+use std::time;
+use std::vec;
+
+func main() -> void {
+    // 2024-07-01T00:00:00Z：北半球处于夏令时。
+    let ts: int = 1719792000000;
+
+    match time.format_zone(ts, "%Y-%m-%d %H:%M:%S %:z", "Asia/Shanghai") {
+        ok(text) => { dev.assert(text == "2024-07-01 08:00:00 +08:00"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    // 纽约夏令时：UTC-4，而不是标准时的 UTC-5。
+    match time.format_zone(ts, "%Y-%m-%d %H:%M", "America/New_York") {
+        ok(text) => { dev.assert(text == "2024-06-30 20:00"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match time.offset(ts, "America/New_York") {
+        ok(seconds) => { dev.assert(seconds == -14400); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match time.offset(ts, "Asia/Shanghai") {
+        ok(seconds) => { dev.assert(seconds == 28800); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 时区名大小写不敏感。
+    match time.format_zone(ts, "%H:%M", "asia/shanghai") {
+        ok(text) => { dev.assert(text == "08:00"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 按时区把本地时间解析回时间戳（只写日期时按 00:00 处理）。
+    match time.parse_zone("2024-07-01 08:00:00", "%Y-%m-%d %H:%M:%S", "Asia/Shanghai") {
+        ok(parsed) => { dev.assert(parsed == ts); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match time.parse_zone("2024-07-01", "%Y-%m-%d", "Asia/Shanghai") {
+        ok(parsed) => { dev.assert(parsed == 1719763200000); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 夏令时回拨的重复时刻取较早的一次（EDT，UTC-4）。
+    match time.parse_zone("2024-11-03 01:30:00", "%Y-%m-%d %H:%M:%S", "America/New_York") {
+        ok(parsed) => { dev.assert(parsed == 1730611800000); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+
+    // 未知时区返回 err，不会 panic。
+    match time.format_zone(ts, "%Y", "Mars/Olympus") {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("unknown timezone")); }
+    }
+
+    let zones: vec<string> = time.zone_names();
+    dev.assert(zones.len() > 300);
+    dev.assert(vec.contains(zones, "Asia/Shanghai"));
+    dev.assert(vec.contains(zones, "UTC"));
+
+    // 系统时区名（Windows / Linux 都能取到），取不到时为空串。
+    let local: string = time.local_zone();
+    dev.log("local zone: " + local);
+
+    dev.log("timezone ok");
+}

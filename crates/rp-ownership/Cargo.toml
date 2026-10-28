@@ -1,0 +1,8 @@
+[package]
+name = "rp-ownership"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rp-ast = { path = "../rp-ast" }
+rp-types = { path = "../rp-types" }

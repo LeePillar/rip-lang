@@ -1,0 +1,85 @@
+mod examples;
+
+// 反射：运行时类型名、字段读取、枚举变体与按名字调用方法。
+
+use std::dev;
+use std::reflect;
+
+type user = [id: int, name: string];
+
+type status = enum {
+    active,
+    banned(reason: string),
+}
+
+func main() -> void {
+    let u: user = [id = 7, name = "Alice"];
+
+    dev.assert(reflect.type_name(u) == "user");
+    dev.assert(reflect.kind(u) == "struct");
+    dev.assert(reflect.type_name(42) == "int");
+    dev.assert(reflect.kind(42) == "int");
+    dev.assert(reflect.type_name("text") == "string");
+    dev.assert(reflect.type_name([1, 2]) == "vec");
+    dev.assert(reflect.type_name(["a" = 1]) == "map");
+
+    dev.assert(reflect.is(u, "user"));
+    dev.assert(reflect.is(u, "struct"));
+    dev.assert(!reflect.is(u, "status"));
+
+    let names: vec<string> = reflect.fields(u);
+    dev.assert(names.len() == 2);
+    dev.assert(reflect.has(u, "name"));
+    dev.assert(!reflect.has(u, "missing"));
+    match reflect.get(u, "id") {
+        some(value) => { dev.assert(value.as_int().unwrap_or(0) == 7); }
+        none => { dev.assert(false); }
+    }
+    match reflect.get(u, "missing") {
+        some(_) => { dev.assert(false); }
+        none => {}
+    }
+
+    // 枚举：类型名是枚举名，变体名单独读取。
+    let banned: status = status.banned[reason = "spam"];
+    dev.assert(reflect.type_name(banned) == "status");
+    dev.assert(reflect.kind(banned) == "struct");
+    match reflect.variant(banned) {
+        some(name) => { dev.assert(name == "banned"); }
+        none => { dev.assert(false); }
+    }
+    match reflect.variant(status.active) {
+        some(name) => { dev.assert(name == "active"); }
+        none => { dev.assert(false); }
+    }
+
+    // 动态派发：按名字调用方法，错误以 err 返回而不是中断程序。
+    match reflect.invoke("  hello  ", "trim", []) {
+        ok(value) => { dev.assert(value.as_string().unwrap_or("") == "hello"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match reflect.invoke(10, "to_string", []) {
+        ok(value) => { dev.assert(value.as_string().unwrap_or("") == "10"); }
+        err(message) => { dev.log(message); dev.assert(false); }
+    }
+    match reflect.invoke("abc", "no_such_method", []) {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("no method")); }
+    }
+
+    // map 与 vec 也能按名字读取。
+    let scores: map<string, int> = ["a" = 1, "b" = 2];
+    dev.assert(reflect.has(scores, "b"));
+    match reflect.get(scores, "b") {
+        some(value) => { dev.assert(value.as_int().unwrap_or(0) == 2); }
+        none => { dev.assert(false); }
+    }
+    let items: vec<string> = ["x", "y"];
+    match reflect.get(items, "1") {
+        some(value) => { dev.assert(value.as_string().unwrap_or("") == "y"); }
+        none => { dev.assert(false); }
+    }
+    dev.assert(reflect.fields(items).len() == 2);
+
+    dev.log("reflect ok");
+}

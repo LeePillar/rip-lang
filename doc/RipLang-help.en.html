@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rip Language Manual</title>
+<style>
+:root{
+  --bg:#ffffff;--panel:#f7f9fc;--text:#1f2328;--muted:#5b6572;--border:#e3e8ef;
+  --accent:#2563eb;--accent-soft:#eaf1ff;--code-bg:#f6f8fa;--mark:#fff3b0;
+  --kw:#cf222e;--ty:#953800;--st:#0a3069;--cm:#6e7781;--nm:#0550ae;--fn:#8250df;
+}
+html[data-theme="dark"]{
+  --bg:#0f141a;--panel:#141b24;--text:#e6edf3;--muted:#9aa7b4;--border:#263140;
+  --accent:#58a6ff;--accent-soft:#16283f;--code-bg:#0b1118;--mark:#5c4b00;
+  --kw:#ff7b72;--ty:#ffa657;--st:#a5d6ff;--cm:#8b949e;--nm:#79c0ff;--fn:#d2a8ff;
+}
+@media (prefers-color-scheme: dark){
+  html:not([data-theme="light"]){
+    --bg:#0f141a;--panel:#141b24;--text:#e6edf3;--muted:#9aa7b4;--border:#263140;
+    --accent:#58a6ff;--accent-soft:#16283f;--code-bg:#0b1118;--mark:#5c4b00;
+    --kw:#ff7b72;--ty:#ffa657;--st:#a5d6ff;--cm:#8b949e;--nm:#79c0ff;--fn:#d2a8ff;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre,kbd{font-family:"Cascadia Mono",Consolas,"JetBrains Mono",monospace}
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;
+  gap:12px;padding:0 16px;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:40}
+.brand{font-weight:650;font-size:15px;color:var(--text);white-space:nowrap}
+.brand:hover{text-decoration:none}
+.search-wrap{position:relative;flex:1;max-width:520px;margin-left:auto}
+#q{width:100%;height:34px;padding:0 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--panel);color:var(--text);font-size:13px;outline:none}
+#q:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+kbd{border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;
+  padding:0 5px;font-size:11px;color:var(--muted);background:var(--panel)}
+.results{position:absolute;top:46px;left:0;right:0;max-height:62vh;overflow:auto;
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;z-index:50}
+.result{display:block;padding:8px 10px;border-radius:8px;color:var(--text)}
+.result:hover,.result.active{background:var(--panel);text-decoration:none}
+.result .rt{font-weight:600;font-size:13px}
+.result .rp{font-size:12px;color:var(--muted)}
+.result b{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.empty{padding:10px;color:var(--muted);font-size:13px}
+.icon-btn,.menu-btn{border:1px solid var(--border);background:var(--panel);color:var(--text);
+  width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1}
+.menu-btn{display:none}
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:60}
+.sidebar{position:fixed;top:56px;bottom:0;left:0;width:288px;overflow:auto;
+  background:var(--panel);border-right:1px solid var(--border);padding:16px 12px 40px;z-index:30}
+.toc-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  margin:0 10px 10px}
+#toc{list-style:none;margin:0;padding:0}
+#toc li{margin:1px 0}
+#toc a{display:block;padding:5px 10px;border-radius:7px;color:var(--muted);font-size:13px;
+  line-height:1.45;border-left:2px solid transparent}
+#toc a:hover{background:var(--bg);color:var(--text);text-decoration:none}
+#toc a.lv3{padding-left:24px;font-size:12.5px}
+#toc a.active{background:var(--accent-soft);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.doc-links{margin-top:18px;border-top:1px solid var(--border);padding-top:12px}
+.doc-links a{display:block;font-size:12.5px;color:var(--muted);padding:4px 10px}
+.content{max-width:none;margin:0;padding:88px 32px 120px}
+.page{max-width:900px;margin:0 auto}
+@media (min-width:1001px){
+  .content{margin-left:288px}
+}
+.content h1{font-size:30px;line-height:1.3;margin:0 0 18px;letter-spacing:-.01em}
+.content h2{font-size:22px;margin:52px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.content h3{font-size:17px;margin:32px 0 10px}
+.content h4{font-size:15px;margin:22px 0 8px}
+.content h1,.content h2,.content h3,.content h4{scroll-margin-top:76px}
+.content p{margin:10px 0}
+.content ul,.content ol{margin:8px 0 14px;padding-left:24px}
+.content li{margin:5px 0}
+.content li>ul,.content li>ol{margin:4px 0}
+.content blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);
+  background:var(--panel);border-radius:0 8px 8px 0;color:var(--muted)}
+.content strong{font-weight:650}
+.content code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;
+  padding:1px 5px;font-size:12.5px;white-space:normal;overflow-wrap:anywhere}
+.content pre{margin:0;padding:14px 16px;overflow:auto;background:var(--code-bg);
+  border-radius:10px;border:1px solid var(--border);font-size:12.8px;line-height:1.65}
+.content pre code{background:none;border:0;padding:0;white-space:pre;font-size:inherit}
+.code-block{position:relative;margin:14px 0}
+.copy{position:absolute;top:8px;right:8px;padding:3px 9px;font-size:11px;
+  border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--muted);
+  cursor:pointer;opacity:0;transition:opacity .15s}
+.code-block:hover .copy{opacity:1}
+.copy.done{color:var(--accent);border-color:var(--accent)}
+@media (hover:none){.copy{opacity:1}}
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:10px}
+.content table{border-collapse:collapse;width:100%;font-size:13px}
+.content th,.content td{padding:8px 12px;border-bottom:1px solid var(--border);
+  text-align:left;vertical-align:top}
+.content th{background:var(--panel);font-weight:600;white-space:nowrap}
+.content tbody tr:last-child td{border-bottom:0}
+.content tbody tr:hover{background:color-mix(in srgb,var(--panel) 60%,transparent)}
+.content td code{white-space:normal}
+.anchor{margin-left:8px;color:var(--muted);opacity:0;font-weight:400;font-size:.8em;
+  user-select:none}
+.anchor::before{content:"#"}
+h1:hover .anchor,h2:hover .anchor,h3:hover .anchor,h4:hover .anchor{opacity:.7}
+.kw{color:var(--kw)}.ty{color:var(--ty)}.st{color:var(--st)}.cm{color:var(--cm);
+  font-style:italic}.nm{color:var(--nm)}.fn{color:var(--fn)}.an{color:var(--ty);font-weight:600}
+.to-top{position:fixed;right:22px;bottom:22px;width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;
+  display:none;z-index:35;font-size:16px}
+.to-top.show{display:block}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.flash{animation:flash 1.1s ease}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+@media (max-width:1000px){
+  .menu-btn{display:block}
+  .sidebar{transform:translateX(-100%);transition:transform .2s ease;width:300px;
+    box-shadow:0 12px 40px rgba(0,0,0,.2)}
+  .sidebar.open{transform:none}
+  .content{padding:84px 20px 100px}
+  .brand{max-width:38vw;overflow:hidden;text-overflow:ellipsis}
+}
+@media print{
+  .topbar,.sidebar,.to-top,.copy,.progress{display:none!important}
+  .content{padding:0;max-width:none}
+  body{font-size:11pt}
+  a{color:inherit}
+}
+</style>
+</head>
+<body id="top">
+<div class="progress" id="progress"></div>
+<header class="topbar">
+  <button class="menu-btn" id="menu" aria-label="Table of contents">☰</button>
+  <a class="brand" href="#top">Rip Language Manual</a>
+  <div class="search-wrap">
+    <input id="q" type="search" placeholder="Search titles or content (press / to focus)" autocomplete="off" spellcheck="false">
+    <div class="results" id="results" hidden></div>
+  </div>
+  <button class="icon-btn" id="theme" title="Toggle light/dark theme">◐</button>
+</header>
+<nav class="sidebar" id="sidebar">
+  <div class="lang-switch" style="padding:0 10px 12px;font-size:12.5px"><a href="RipLang-help.html">中文</a> | <a href="RipLang-help.en.html">English</a></div>
+  <div class="toc-title">Contents</div>
+  <ul id="toc"></ul>
+  <div class="doc-links">
+    <a href="RipLang-help.html">Rip Language Manual</a>
+    <a href="RipLang-level.html">Rip Language Style Guide</a>
+  </div>
+</nav>
+<main class="content" id="content">
+<div class="page">
+<h1 id="Rip-语言手册"><a class="anchor" href="#Rip-语言手册" aria-hidden="true"></a>Rip Language Manual</h1><p>Rip is a strongly typed, fully explicit, server-oriented language. This manual covers only <strong>how to write, use, and ship</strong> it, organized as variables → syntax → components → projects → commands, and works as a quick reference.</p><blockquote>The search box in the top-right corner searches titles and body text (press <code>/</code> to focus). The sidebar highlights as you scroll. Every code block can be copied with one click.</blockquote><h2 id="1-五分钟上手"><a class="anchor" href="#1-五分钟上手" aria-hidden="true"></a>1. Five-Minute Quick Start</h2><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> version                    <span class="cm"># 确认工具链可用</span>
+<span class="kw">rip</span> new shop --template http   <span class="cm"># 生成项目骨架</span>
+<span class="kw">cd</span> shop
+<span class="kw">rip</span> run main.rp                <span class="cm"># 启动服务：http://127.0.0.1:8080/</span>
+<span class="kw">rip</span> check main.rp              <span class="cm"># 只做静态检查</span>
+<span class="kw">rip</span> build main.rp              <span class="cm"># 编译原生二进制到 dist/</span></code></pre></div><p>The project layout generated by <code>rip new</code>:</p><div class="code-block"><pre><code class="lang-text">shop/
+├── rip.toml      # 项目清单（名称、版本、入口、服务端参数）
+├── main.rp       # 入口，必须含 func main() -&gt; void
+└── .gitignore</code></pre></div><p>The smallest HTTP service:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> shop;
+
+<span class="kw">use</span> std::http;
+
+<span class="an">#[get("/")]</span>
+<span class="kw">func</span> <span class="fn">index</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [message = <span class="st">"Hello, Rip!"</span>]];
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> routes: <span class="ty">vec</span>&lt;http.route&gt; = [];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(routes));
+}</code></pre></div><p>Remember six rules:</p><div class="table-wrap"><table><thead><tr><th style="text-align:left">Rule</th><th style="text-align:left">Description</th></tr></thead><tbody><tr><td style="text-align:left">Single form</td><td style="text-align:left">One syntax per meaning; no aliases</td></tr><tr><td style="text-align:left">All types explicit</td><td style="text-align:left">Variables, parameters, return values, fields, and container elements all need types</td></tr><tr><td style="text-align:left">Statements end with ;</td><td style="text-align:left">Blocks and function declarations do not</td></tr><tr><td style="text-align:left">Four loops</td><td style="text-align:left">loop / while / while let / for ... in, same rules as Rust</td></tr><tr><td style="text-align:left">No class</td><td style="text-align:left">Use ary (fixed-field struct) + free functions</td></tr><tr><td style="text-align:left">No inference</td><td style="text-align:left">No :=, no omitted parameter types</td></tr></tbody></table></div><h2 id="2-变量怎么定义"><a class="anchor" href="#2-变量怎么定义" aria-hidden="true"></a>2. How to Define Variables</h2><p>Four bindings, all written as statements, with explicit types:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> name: <span class="ty">string</span> = <span class="st">"rip"</span>;        <span class="cm">// 不可变</span>
+<span class="kw">let</span> <span class="kw">mut</span> count: <span class="ty">int</span> = <span class="nm">0</span>;          <span class="cm">// 可变</span>
+<span class="kw">const</span> MAX: <span class="ty">int</span> = <span class="nm">1024</span>;           <span class="cm">// 模块级编译期常量</span>
+<span class="kw">static</span> APP: <span class="ty">string</span> = <span class="st">"shop"</span>;     <span class="cm">// 模块级静态值（启动时初始化）</span></code></pre></div><p>Rules:</p><ul><li>A <code>let</code> binding cannot be reassigned; use <code>let mut</code> for variables that change.</li><li><code>const</code> / <code>static</code> are module-level only (outside functions), cannot be reassigned, and there is no <code>static mut</code>.</li><li>No duplicate names in the same scope (no shadowing).</li><li>To modify an <code>ary</code> field or call container-mutating methods such as <code>push</code> / <code>set</code>, the root variable must be <code>let mut</code>.</li><li>Naming: variables/functions/types use <code>snake_case</code>, constants/statics use <code>SCREAMING_SNAKE_CASE</code>.</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> total: <span class="ty">int</span> = <span class="nm">0</span>;
+total = total + <span class="nm">1</span>;      <span class="cm">// 合法</span>
+
+<span class="kw">let</span> fixed: <span class="ty">int</span> = <span class="nm">10</span>;
+<span class="cm">// fixed = 11;          // 编译错误：不可变</span></code></pre></div><h3 id="21-类型一览"><a class="anchor" href="#21-类型一览" aria-hidden="true"></a>2.1 Type Overview</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Type</th><th style="text-align:left">Syntax</th><th style="text-align:left">Description</th></tr></thead><tbody><tr><td style="text-align:left">Integer</td><td style="text-align:left">int (= i64) / i8 / i16 / i32 / i64</td><td style="text-align:left">int by default; bit widths match Rust</td></tr><tr><td style="text-align:left">Unsigned integer</td><td style="text-align:left">u8 / u16 / u32 / u64</td><td style="text-align:left">Same semantics as Rust</td></tr><tr><td style="text-align:left">Float</td><td style="text-align:left">float</td><td style="text-align:left">64-bit</td></tr><tr><td style="text-align:left">String</td><td style="text-align:left">string</td><td style="text-align:left">UTF-8, immutable; single quotes denote one character</td></tr><tr><td style="text-align:left">Boolean</td><td style="text-align:left">bool</td><td style="text-align:left">true / false</td></tr><tr><td style="text-align:left">Struct</td><td style="text-align:left">[id: int, name: string]</td><td style="text-align:left">ary, fixed fields</td></tr><tr><td style="text-align:left">Sequence</td><td style="text-align:left">vec&lt;T&gt;</td><td style="text-align:left">Ordered, indexes start at 0</td></tr><tr><td style="text-align:left">Dictionary</td><td style="text-align:left">map&lt;K, V&gt;</td><td style="text-align:left">Dynamic keys</td></tr><tr><td style="text-align:left">Nullable</td><td style="text-align:left">option&lt;T&gt;</td><td style="text-align:left">some(x) / none</td></tr><tr><td style="text-align:left">Result</td><td style="text-align:left">result&lt;T, E&gt;</td><td style="text-align:left">ok(x) / err(e)</td></tr><tr><td style="text-align:left">Any</td><td style="text-align:left">any</td><td style="text-align:left">Only at JSON / dynamic-dictionary boundaries</td></tr></tbody></table></div><p>Conversions between integer types must be explicit:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> a: <span class="ty">u32</span> = <span class="nm">0xFF</span>;
+<span class="kw">let</span> b: <span class="ty">int</span> = a.<span class="fn">to_int</span>();
+<span class="kw">let</span> c: <span class="ty">u8</span> = b.<span class="fn">to_u8</span>();</code></pre></div><p>A prefix only denotes the radix (<code>0x</code> / <code>0o</code> / <code>0b</code>); the type is a suffix (<code>42i32</code>, <code>7u8</code>). Integers without a suffix are <code>int</code>, decimals are <code>float</code>.</p><h3 id="22-三种数据结构"><a class="anchor" href="#22-三种数据结构" aria-hidden="true"></a>2.2 The Three Data Structures</h3><p><strong>ary: fixed-field struct</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> address = [city: <span class="ty">string</span>, zip: <span class="ty">string</span>];
+<span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>, address: address];
+
+<span class="kw">let</span> <span class="kw">mut</span> u: user = [
+    id = <span class="nm">1</span>,
+    name = <span class="st">"张三"</span>,
+    address = [city = <span class="st">"北京"</span>, zip = <span class="st">"100000"</span>]
+];
+
+u.name;                 <span class="cm">// 读</span>
+u.address.city;         <span class="cm">// 嵌套读</span>
+u.name = <span class="st">"李四"</span>;         <span class="cm">// 写，u 必须是 let mut</span></code></pre></div><p>Fields are accessed with dots; <code>u["name"]</code> and <code>u[0]</code> are forbidden; the field set is fixed at compile time.</p><p><strong>vec: ordered sequence</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> nums: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>];
+<span class="kw">let</span> empty: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [];
+<span class="kw">let</span> mixed: <span class="ty">vec</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [<span class="st">"a"</span>, <span class="nm">1</span>];   <span class="cm">// 定长异构，只读</span>
+
+nums.<span class="nm">0</span>;        <span class="cm">// 编译期常量下标</span>
+nums.<span class="fn">at</span>(<span class="nm">1</span>);    <span class="cm">// 运行时下标，返回 result&lt;int, string&gt;</span>
+nums.<span class="fn">len</span>();</code></pre></div><p><code>nums[0]</code> is forbidden; index with <code>.0</code> (constant) or <code>.at(i)</code> (runtime).</p><p><strong>map: dynamic dictionary</strong></p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> scores: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [];
+scores.<span class="fn">set</span>(<span class="st">"张三"</span>, <span class="nm">90</span>);
+scores.<span class="fn">get</span>(<span class="st">"张三"</span>);     <span class="cm">// option&lt;int&gt;</span>
+scores.<span class="fn">has</span>(<span class="st">"张三"</span>);     <span class="cm">// bool</span>
+scores.<span class="fn">delete</span>(<span class="st">"张三"</span>);  <span class="cm">// option&lt;int&gt;</span>
+
+<span class="kw">let</span> config: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt; = [<span class="st">"name"</span> = <span class="st">"shop"</span>, <span class="st">"city"</span> = <span class="st">"北京"</span>];</code></pre></div><p><code>scores["alice"]</code> is forbidden; always use <code>.get</code> / <code>.set</code> / <code>.has</code> / <code>.delete</code>.</p><p>Choosing between them: fixed fields use <code>ary</code>, ordered indexing uses <code>vec</code>, dynamic keys use <code>map</code>; there are no implicit conversions.</p><h3 id="23-option-与-result"><a class="anchor" href="#23-option-与-result" aria-hidden="true"></a>2.3 option and result</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> found: <span class="ty">option</span>&lt;<span class="ty">int</span>&gt; = <span class="kw">some</span>(<span class="nm">1</span>);
+<span class="kw">let</span> missing: <span class="ty">option</span>&lt;<span class="ty">int</span>&gt; = <span class="kw">none</span>;
+
+<span class="kw">let</span> ok_value: <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt; = <span class="kw">ok</span>(<span class="nm">1</span>);
+<span class="kw">let</span> bad_value: <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt; = <span class="kw">err</span>(<span class="st">"boom"</span>);</code></pre></div><ul><li><code>option&lt;T&gt;</code>: <code>.unwrap_or(x)</code>, <code>.unwrap()</code>, <code>.is_some()</code>, <code>.is_none()</code>.</li><li><code>result&lt;T, E&gt;</code>: <code>.unwrap_or(x)</code>, <code>.unwrap()</code>, <code>.unwrap_err()</code>, <code>.is_ok()</code>, <code>.is_err()</code>.</li></ul><h3 id="24-命名类型与递归类型"><a class="anchor" href="#24-命名类型与递归类型" aria-hidden="true"></a>2.4 Named and Recursive Types</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>, tags: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt;];
+<span class="kw">type</span> node = [value: <span class="ty">int</span>, children: <span class="ty">vec</span>&lt;node&gt;];   <span class="cm">// 递归：经 vec 间接自引用</span></code></pre></div><ul><li>Type definitions cannot change at runtime; type names are unique within a file.</li><li>Recursive types must reference themselves indirectly through containers such as <code>vec</code> / <code>option</code> / <code>map</code>; pure alias cycles (<code>type a = b; type b = a;</code>) are rejected.</li></ul><h3 id="25-泛型函数"><a class="anchor" href="#25-泛型函数" aria-hidden="true"></a>2.5 Generic Functions</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">identity</span>&lt;T&gt;(x: T) -&gt; T {
+    <span class="kw">return</span> x;
+}
+
+<span class="kw">func</span> <span class="fn">size</span>&lt;T&gt;(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;T&gt;) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> items.<span class="fn">len</span>();
+}
+
+<span class="kw">let</span> n: <span class="ty">int</span> = <span class="fn">identity</span>(<span class="nm">1</span>);              <span class="cm">// 从实参推断</span>
+<span class="kw">let</span> s: <span class="ty">string</span> = <span class="fn">identity</span>&lt;<span class="ty">string</span>&gt;(<span class="st">"a"</span>); <span class="cm">// 显式类型实参（推断不出时用）</span>
+
+<span class="cm">// 约束：S 必须实现 shape，函数体内可以调用接口方法</span>
+<span class="kw">func</span> <span class="fn">total_area</span>&lt;S: shape&gt;(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;S&gt;) -&gt; <span class="ty">float</span> {
+    <span class="kw">let</span> <span class="kw">mut</span> sum: <span class="ty">float</span> = <span class="nm">0.0</span>;
+    <span class="kw">for</span> item <span class="kw">in</span> items {
+        sum = sum + item.<span class="fn">area</span>();
+    }
+    <span class="kw">return</span> sum;
+}</code></pre></div><ul><li>Type arguments can be omitted (inferred from arguments) or written explicitly as <code>f&lt;T&gt;(...)</code>; an explicit list must be complete.</li><li>The constraint <code>&lt;T: interface name&gt;</code> determines which methods the function body may call; an unconstrained T can only be passed around as a whole.</li><li>Runtime type erasure keeps a single implementation; AOT output from <code>rip run</code> and <code>rip build</code> behaves identically.</li></ul><h3 id="26-Copy-与-Move"><a class="anchor" href="#26-Copy-与-Move" aria-hidden="true"></a>2.6 Copy and Move</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Type</th><th style="text-align:left">Semantics</th></tr></thead><tbody><tr><td style="text-align:left">int* / float / bool</td><td style="text-align:left">Copy; assignment and argument passing copy automatically</td></tr><tr><td style="text-align:left">string / ary / vec / map / closures</td><td style="text-align:left">Move; the original variable becomes invalid after assignment or pass-by-value</td></tr></tbody></table></div><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> a: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = [<span class="nm">1</span>, <span class="nm">2</span>];
+<span class="kw">let</span> b: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = a;        <span class="cm">// a 被 move，此后不能再用 a</span>
+<span class="kw">let</span> c: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt; = b.<span class="fn">clone</span>(); <span class="cm">// 需要两份时就 clone</span></code></pre></div><p>Function parameters are Copy / Move by default; write <code>read</code> when you do not want to give up ownership:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">total</span>(<span class="kw">read</span> items: <span class="ty">vec</span>&lt;<span class="ty">int</span>&gt;) -&gt; <span class="ty">int</span> {   <span class="cm">// 只读借用，调用方保留 items</span>
+    <span class="kw">return</span> <span class="ty">vec</span>.<span class="fn">sum</span>(items);
+}
+
+<span class="kw">func</span> <span class="fn">add_one</span>(<span class="kw">write</span> counter: <span class="ty">int</span>) -&gt; <span class="ty">void</span> {  <span class="cm">// 可写借用，实参必须是 let mut</span>
+    counter = counter + <span class="nm">1</span>;
+}</code></pre></div><h3 id="27-枚举adt"><a class="anchor" href="#27-枚举adt" aria-hidden="true"></a>2.7 Enums (ADT)</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> status = <span class="kw">enum</span> {
+    active,
+    pending,
+    banned(reason: <span class="ty">string</span>),
+}
+
+<span class="kw">let</span> s: status = status.active;
+<span class="kw">let</span> b: status = status.banned[reason = <span class="st">"spam"</span>];</code></pre></div><ul><li>Variants are separated by <code>,</code>; field-less variants are just names, variants with fields use <code>name(field: type, ...)</code>.</li><li>Construct with <code>enum.variant</code> / <code>enum.variant[field = value]</code>; every field is required and types must match.</li><li>Enums are Move types; use <code>.clone()</code> when you need two copies.</li><li>Enums can carry methods: <code>func status.blocked(read s: status) -&gt; bool</code>, called as <code>s.blocked()</code>.</li><li>Fields of an enum value cannot be read directly (<code>s.reason</code> is an error); destructure with <code>match</code>.</li><li>Serialized to JSON as <code>{"variant": "banned", "reason": "spam"}</code>.</li></ul><h2 id="3-语法与控制流怎么用"><a class="anchor" href="#3-语法与控制流怎么用" aria-hidden="true"></a>3. Syntax and Control Flow</h2><h3 id="31-运算符"><a class="anchor" href="#31-运算符" aria-hidden="true"></a>3.1 Operators</h3><div class="code-block"><pre><code class="lang-text">+  -  *  /  %       算术（同类型，结果同类型；零除 panic）
+== != &gt; &gt;= &lt; &lt;=     比较（同类型，返回 bool）
+&amp;&amp; || !             逻辑（短路）
++                   字符串拼接（两侧都是 string）</code></pre></div><p>Precedence from low to high: <code>||</code> → <code>&amp;&amp;</code> → comparison → <code>+ -</code> → <code>* / %</code> → unary <code>! -</code>.</p><h3 id="32-if"><a class="anchor" href="#32-if" aria-hidden="true"></a>3.2 if</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">if</span> score &gt;= <span class="nm">90</span> {
+    <span class="fn">print</span>(<span class="st">"A"</span>);
+} <span class="kw">else</span> <span class="kw">if</span> score &gt;= <span class="nm">80</span> {
+    <span class="fn">print</span>(<span class="st">"B"</span>);
+} <span class="kw">else</span> {
+    <span class="fn">print</span>(<span class="st">"C"</span>);
+}</code></pre></div><p>Conditions must be <code>bool</code> (no truthy/falsy); parentheses are optional, braces are required.</p><h3 id="33-循环四种写法"><a class="anchor" href="#33-循环四种写法" aria-hidden="true"></a>3.3 Loops: Four Forms (same rules as Rust)</h3><p>There are only these four loops; pick one per use case and do not combine it with other syntax.</p><div class="code-block"><pre><code class="lang-rp"><span class="cm">// while：条件成立就继续，最常用的计数 / 条件循环</span>
+<span class="kw">let</span> <span class="kw">mut</span> count: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">while</span> count &lt; <span class="nm">10</span> {
+    <span class="fn">print</span>(count.<span class="fn">to_string</span>());
+    count = count + <span class="nm">1</span>;
+}
+
+<span class="cm">// loop：一直循环，退出条件写在循环体里</span>
+<span class="kw">let</span> <span class="kw">mut</span> i: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">loop</span> {
+    <span class="kw">if</span> i &gt;= <span class="nm">10</span> { <span class="kw">break</span>; }
+    <span class="fn">print</span>(i.<span class="fn">to_string</span>());
+    i = i + <span class="nm">1</span>;
+}
+
+<span class="cm">// for ... in：遍历 vec（得到元素）或 map（得到 key）</span>
+<span class="kw">let</span> tags: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; = [<span class="st">"a"</span>, <span class="st">"b"</span>];
+<span class="kw">for</span> tag <span class="kw">in</span> tags {
+    <span class="fn">print</span>(tag);
+}
+
+<span class="kw">let</span> <span class="kw">mut</span> scores: <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt; = [<span class="st">"math"</span> = <span class="nm">90</span>];
+<span class="kw">for</span> key <span class="kw">in</span> scores {          <span class="cm">// key: string</span>
+    <span class="fn">print</span>(key);
+}
+
+<span class="cm">// while let：每轮取一个值并匹配模式，取不到就结束</span>
+<span class="kw">while</span> <span class="kw">let</span> <span class="kw">some</span>(value) = cache.<span class="fn">get</span>(<span class="st">"key"</span>) =&gt; {
+    <span class="fn">print</span>(value);
+    cache.<span class="fn">delete</span>(<span class="st">"key"</span>);       <span class="cm">// 删掉后下一轮 get 返回 none，循环结束</span>
+}</code></pre></div><p><strong>break / continue</strong> (works in all four loops; affects only the innermost one):</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> <span class="kw">mut</span> k: <span class="ty">int</span> = <span class="nm">0</span>;
+<span class="kw">while</span> k &lt; <span class="nm">10</span> {
+    k = k + <span class="nm">1</span>;
+    <span class="kw">if</span> k == <span class="nm">2</span> { <span class="kw">continue</span>; }    <span class="cm">// 跳过本次，回到条件判断</span>
+    <span class="kw">if</span> k == <span class="nm">5</span> { <span class="kw">break</span>; }       <span class="cm">// 直接结束循环</span>
+    <span class="fn">print</span>(k.<span class="fn">to_string</span>());
+}</code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">Scenario</th><th style="text-align:left">Which loop</th><th style="text-align:left">Syntax</th></tr></thead><tbody><tr><td style="text-align:left">Fixed count / counting</td><td style="text-align:left">while</td><td style="text-align:left"><code>while i &lt; n { ...; i = i + 1; }</code></td></tr><tr><td style="text-align:left">Exit condition in the middle</td><td style="text-align:left">loop</td><td style="text-align:left"><code>loop { ... if done { break; } }</code></td></tr><tr><td style="text-align:left">Iterating a vec / map</td><td style="text-align:left">for ... in</td><td style="text-align:left"><code>for x in xs { ... }</code></td></tr><tr><td style="text-align:left">Draining an optional value until empty</td><td style="text-align:left">while let</td><td style="text-align:left"><code>while let some(v) = next() =&gt; { ... }</code></td></tr></tbody></table></div><ul><li>Loop conditions must be <code>bool</code>; no truthy / falsy.</li><li>There is no <code>do-while</code> and no C-style three-part <code>for</code>; write <code>while</code> for conditional loops.</li><li>In <code>while let</code>, <code>=</code> binds a pattern and <code>=&gt;</code> introduces the body (<code>=&gt;</code> occurs only here and in <code>match</code> arms).</li><li><code>while let</code> is typically used for calls such as <code>cache.get</code> and <code>map.delete</code> that return <code>option</code>.</li></ul><h3 id="34-match"><a class="anchor" href="#34-match" aria-hidden="true"></a>3.4 match</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> opt {
+    <span class="kw">some</span>(v) =&gt; { <span class="fn">print</span>(v.<span class="fn">to_string</span>()); }
+    <span class="kw">none</span> =&gt; { <span class="fn">print</span>(<span class="st">"empty"</span>); }
+}
+
+<span class="kw">match</span> res {
+    <span class="kw">ok</span>(v) =&gt; { <span class="fn">print</span>(v.<span class="fn">to_string</span>()); }
+    <span class="kw">err</span>(e) =&gt; { <span class="fn">print</span>(<span class="st">"error: "</span> + e); }
+}</code></pre></div><ul><li>Arms use <code>=&gt;</code> (pattern on the left, body on the right); <code>=</code> is only for binding and assignment; arm bodies require braces.</li><li><code>option</code> must cover both <code>some</code> / <code>none</code>, and <code>result</code> must cover <code>ok</code> / <code>err</code>; a missing arm is a compile error.</li><li>Destructuring a struct:</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> user {
+    [id: <span class="ty">int</span>, name: <span class="ty">string</span>, address: _] =&gt; {
+        <span class="fn">print</span>(name);
+    }
+}</code></pre></div><p>An enum must cover every variant:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> state {
+    status.active =&gt; { <span class="fn">print</span>(<span class="st">"ok"</span>); }
+    status.pending =&gt; { <span class="fn">print</span>(<span class="st">"wait"</span>); }
+    status.banned[reason: <span class="ty">string</span>] =&gt; { <span class="fn">print</span>(reason); }
+}</code></pre></div><ul><li>Enum patterns are written <code>enum_name.variant</code>; variants with fields bind them via <code>[field: type, ...]</code> (<code>_</code> binds nothing).</li><li>Omitting any variant is a compile error: <code>match on enum 'status' must cover variant 'banned'</code>.</li></ul><h3 id="35-把错误往上抛">3.5 <code>?</code><a class="anchor" href="#35-把错误往上抛" aria-hidden="true"></a>: Propagating Errors</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">read_config</span>(path: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> content: <span class="ty">string</span> = fs.<span class="fn">read_file</span>(path)?;
+    <span class="kw">return</span> <span class="kw">ok</span>(content);
+}</code></pre></div><p><code>?</code> may only be used in functions returning <code>result</code>; on <code>err</code> it returns immediately, on <code>ok</code> it unwraps the value and continues. Inside a function whose return type is not <code>result</code>, using <code>?</code> is a compile error.</p><h3 id="36-函数定义与调用"><a class="anchor" href="#36-函数定义与调用" aria-hidden="true"></a>3.6 Declaring and Calling Functions</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">add</span>(a: <span class="ty">int</span>, b: <span class="ty">int</span>) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> a + b;
+}
+
+<span class="kw">func</span> <span class="fn">log_message</span>(msg: <span class="ty">string</span>) -&gt; <span class="ty">void</span> {
+    <span class="fn">print</span>(msg);
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> sum: <span class="ty">int</span> = <span class="fn">add</span>(<span class="nm">1</span>, <span class="nm">2</span>);
+    <span class="fn">log_message</span>(<span class="st">"sum="</span> + sum.<span class="fn">to_string</span>());
+}</code></pre></div><ul><li>Each parameter is written <code>name: type</code>; the return type is mandatory — write <code>-&gt; void</code> when nothing is returned.</li><li>Overloading, default parameters, and variadic parameters are not supported.</li><li>Functions may be declared after <code>main</code>; all are registered before execution.</li></ul><p><strong>Visibility</strong>: <code>self func</code> is visible only within the same package (same directory); <code>pub func</code> / <code>pub type</code> are exported to other packages. Functions without a modifier stay globally visible.</p><p><strong>Closures</strong>: parameter and return types must be written, and all types must be explicit:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> double: <span class="kw">func</span>(<span class="ty">int</span>) -&gt; <span class="ty">int</span> = <span class="kw">func</span>(x: <span class="ty">int</span>) -&gt; <span class="ty">int</span> {
+    <span class="kw">return</span> x * <span class="nm">2</span>;
+};</code></pre></div><p><strong>Three call forms</strong> (memorize these three and you can call anything):</p><div class="code-block"><pre><code class="lang-rp"><span class="fn">add</span>(<span class="nm">1</span>, <span class="nm">2</span>)                    <span class="cm">// 1. 普通函数：直接写名字</span>
+http.<span class="fn">serve</span>(<span class="nm">8080</span>, handler)    <span class="cm">// 2. 标准库：use 后用「别名.函数」</span>
+items.<span class="fn">push</span>(<span class="nm">3</span>)                <span class="cm">// 3. 值的方法：值.方法()</span></code></pre></div><p>Standard-library imports can be aliased:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;
+<span class="kw">use</span> std::sys <span class="kw">as</span> sys;
+<span class="kw">use</span> rust::serde_json <span class="kw">as</span> json;</code></pre></div><h3 id="37-注解写在函数上方"><a class="anchor" href="#37-注解写在函数上方" aria-hidden="true"></a>3.7 Annotations (Above Functions)</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Annotation</th><th style="text-align:left">Effect</th><th style="text-align:left">Example</th></tr></thead><tbody><tr><td style="text-align:left">#[get("/path")] etc.</td><td style="text-align:left">Registers an HTTP route</td><td style="text-align:left">#[post("/users")]</td></tr><tr><td style="text-align:left">#[interval("5m")]</td><td style="text-align:left">Scheduled task</td><td style="text-align:left">Intervals use ms / s / m / h / d</td></tr><tr><td style="text-align:left">#[test]</td><td style="text-align:left">Test function, run by rip test</td><td style="text-align:left">No parameters, no arguments, returns void</td></tr><tr><td style="text-align:left">#[bench]</td><td style="text-align:left">Benchmark function, run by rip bench</td><td style="text-align:left">No parameters, no arguments, returns void</td></tr></tbody></table></div><p>Route handlers have a fixed signature: <code>func(read req: http.request) -&gt; http.response</code>.</p><h3 id="38-方法与接口"><a class="anchor" href="#38-方法与接口" aria-hidden="true"></a>3.8 Methods and Interfaces</h3><p>Attaching methods to a type: <code>func Type.method(receiver, ...)</code>; the receiver is <code>read</code> (read-only) or <code>write</code> (mutable).</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> user = [id: <span class="ty">int</span>, name: <span class="ty">string</span>];
+
+<span class="kw">func</span> user.<span class="fn">display</span>(<span class="kw">read</span> u: user) -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> u.name;
+}
+
+<span class="kw">func</span> user.<span class="fn">rename</span>(<span class="kw">write</span> u: user, name: <span class="ty">string</span>) -&gt; <span class="ty">void</span> {
+    u.name = name;
+}
+
+<span class="kw">let</span> <span class="kw">mut</span> u: user = [id = <span class="nm">1</span>, name = <span class="st">"张三"</span>];
+<span class="fn">print</span>(u.<span class="fn">display</span>());
+u.<span class="fn">rename</span>(<span class="st">"李四"</span>);</code></pre></div><ul><li>You simply call <code>u.display()</code>; no extra syntax is needed.</li><li>A <code>write</code> method can only be called on a <code>let mut</code> variable.</li><li>Method names are unique per type; the fully qualified name is <code>user.display</code>.</li></ul><p><strong>Interfaces</strong>: declare a set of methods; any type implementing them can be used as that interface.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">type</span> shape = <span class="kw">interface</span> {
+    <span class="kw">func</span> <span class="fn">area</span>() -&gt; <span class="ty">float</span>
+    <span class="kw">write</span> <span class="kw">func</span> <span class="fn">scale</span>(factor: <span class="ty">float</span>) -&gt; <span class="ty">void</span>
+}
+
+<span class="kw">type</span> circle = [radius: <span class="ty">float</span>];
+
+<span class="kw">func</span> circle.<span class="fn">area</span>(<span class="kw">read</span> c: circle) -&gt; <span class="ty">float</span> {
+    <span class="kw">return</span> <span class="nm">3.0</span> * c.radius * c.radius;
+}
+
+<span class="kw">func</span> circle.<span class="fn">scale</span>(<span class="kw">write</span> c: circle, factor: <span class="ty">float</span>) -&gt; <span class="ty">void</span> {
+    c.radius = c.radius * factor;
+}
+
+<span class="kw">let</span> shapes: <span class="ty">vec</span>&lt;shape&gt; = [circle[radius = <span class="nm">1.0</span>]];
+<span class="kw">for</span> s <span class="kw">in</span> shapes {
+    <span class="fn">print</span>(s.<span class="fn">area</span>().<span class="fn">to_string</span>());
+}</code></pre></div><ul><li>No implements clause is needed: matching method names, parameters, and return types implement the interface automatically.</li><li>Interfaces can be stored in <code>vec</code> and used as parameters / return values; calls resolve the method on the real type automatically.</li><li>Interface values are created with named constructors (<code>circle[radius = 1.0]</code>), which is how the runtime records the type.</li></ul><h3 id="39-defer-资源释放"><a class="anchor" href="#39-defer-资源释放" aria-hidden="true"></a>3.9 defer: Cleanup on Function Exit</h3><p><code>defer call;</code> postpones a call until <strong>the current function exits</strong>; use it to close connections, unlock, or delete temporary files.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">save</span>(path: <span class="ty">string</span>, text: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">void</span>, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> f: file = fs.<span class="fn">open</span>(path)?;
+    <span class="kw">defer</span> f.<span class="fn">close</span>();            <span class="cm">// 实参在 defer 处就地求值</span>
+    f.<span class="fn">write</span>(text)?;
+    <span class="kw">return</span> <span class="kw">ok</span>;
+}</code></pre></div><ul><li>Only calls are allowed: <code>defer f(...)</code> / <code>defer x.m(...)</code> / <code>defer module.f(...)</code>.</li><li>Arguments are evaluated on the <code>defer</code> line, so changing the variable later does not affect the captured value.</li><li>Multiple <code>defer</code> calls run last-in-first-out: the last one registered runs first.</li><li>They run on normal return, on <code>return</code>, on early return via <code>?</code>, and on runtime errors.</li><li>Each function runs only its own <code>defer</code> calls; when an inner function returns it cleans up only its own entries.</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">demo</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">defer</span> <span class="fn">print</span>(<span class="st">"first"</span>);        <span class="cm">// 最后执行</span>
+    <span class="kw">defer</span> <span class="fn">print</span>(<span class="st">"second"</span>);       <span class="cm">// 先执行</span>
+    <span class="fn">print</span>(<span class="st">"body"</span>);
+}
+<span class="cm">// 输出：body / second / first</span></code></pre></div><h3 id="310-async-await异步任务">3.10 async / await: Asynchronous Tasks</h3><p><code>async func</code> declares a task function that runs in its own runtime; calling it immediately returns <code>task&lt;T&gt;</code>, and <code>await</code> retrieves the result.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">async</span> <span class="kw">func</span> <span class="fn">load</span>(id: <span class="ty">int</span>) -&gt; user {
+    <span class="kw">return</span> <span class="fn">fetch_user</span>(id);
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="cm">// 先启动两个任务，再依次等待：两个任务真正并行。</span>
+    <span class="kw">let</span> a: <span class="ty">task</span>&lt;user&gt; = <span class="fn">load</span>(<span class="nm">1</span>);
+    <span class="kw">let</span> b: <span class="ty">task</span>&lt;user&gt; = <span class="fn">load</span>(<span class="nm">2</span>);
+    <span class="kw">let</span> first: user = <span class="kw">await</span> a;
+    <span class="kw">let</span> second: user = <span class="kw">await</span> b;
+    <span class="fn">print</span>(first.name + second.name);
+}</code></pre></div><ul><li><code>async</code> may only modify module-level free functions; methods, <code>main</code>, and annotated functions cannot be async.</li><li>A task starts running at the call site; a task that is never <code>await</code>ed keeps running in the background and its result is discarded.</li><li><code>await</code> accepts only <code>task&lt;T&gt;</code> and returns <code>T</code>; a given task can be awaited only once.</li><li>A task has its own runtime: caller variables and closures are invisible, and parameters and return values are copied by value (closures cannot cross tasks).</li><li>If a task fails, <code>await</code> rethrows the original error (including the function stack) to the caller.</li><li>The scheduler creates 8..=64 worker threads based on 4× CPU cores; <code>await</code> first waits for a completion notification (about 200µs) so the task finishes on a scheduler thread, and only after that timeout does the waiter help execute it, so nested <code>await</code> never deadlocks.</li></ul><h2 id="4-内建方法速查"><a class="anchor" href="#4-内建方法速查" aria-hidden="true"></a>4. Built-in Method Reference</h2><h3 id="41-整数与浮点"><a class="anchor" href="#41-整数与浮点" aria-hidden="true"></a>4.1 Integers and Floats</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Method</th><th style="text-align:left">Returns</th></tr></thead><tbody><tr><td style="text-align:left">.to_int(base) / .to_i8(base) / .to_i16(base) / .to_i32(base) / .to_i64(base) / .to_u8(base) / .to_u16(base) / .to_u32(base) / .to_u64(base)</td><td style="text-align:left">The corresponding integer type; the receiver must be a variable; <code>base</code> is the radix (2..36, default 10): <code>let s: string = "ff"; s.to_u8(16)</code>, <code>let n: i8 = 55; n.to_i8(16)</code></td></tr><tr><td style="text-align:left">.to_float() / .to_string() / .to_string_base(base)</td><td style="text-align:left">float / string</td></tr><tr><td style="text-align:left">.abs() / .min(o) / .max(o) / .mod(m) / .pow(e) / .clamp(lo, hi)</td><td style="text-align:left">Same type</td></tr></tbody></table></div><p>Floats: <code>.to_int()</code>, <code>.to_float()</code>, <code>.to_string()</code>, <code>.abs()</code>, <code>.min</code>, <code>.max</code>, <code>.pow</code>, <code>.clamp</code>.</p><h3 id="42-字符串"><a class="anchor" href="#42-字符串" aria-hidden="true"></a>4.2 Strings</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Method</th><th style="text-align:left">Returns</th><th style="text-align:left">Description</th></tr></thead><tbody><tr><td style="text-align:left">.len()</td><td style="text-align:left">int</td><td style="text-align:left">Number of Unicode characters</td></tr><tr><td style="text-align:left">.at(i) / .slice(start, end)</td><td style="text-align:left">result&lt;string, string&gt;</td><td style="text-align:left">Out-of-range returns err</td></tr><tr><td style="text-align:left">.first() / .last()</td><td style="text-align:left">string</td><td style="text-align:left">Empty string returns ""</td></tr><tr><td style="text-align:left">.contains / .starts_with / .ends_with</td><td style="text-align:left">bool</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.index_of / .last_index_of</td><td style="text-align:left">option&lt;int&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.to_upper / .to_lower / .trim / .trim_start / .trim_end</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.replace(old, new) / .replace_all(old, new)</td><td style="text-align:left">string</td><td style="text-align:left">Replaces one / all occurrences</td></tr><tr><td style="text-align:left">.split(sep) / .split_lines() / .chars() / .bytes()</td><td style="text-align:left">vec&lt;string&gt; / vec&lt;u8&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.reverse() / .filter(f) / .remove_whitespace()</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.to_int() / .to_float() / .to_bool()</td><td style="text-align:left">result&lt;T, string&gt;</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.pad_start(n, pad) / .pad_end(n, pad) / .repeat(n)</td><td style="text-align:left">string</td><td style="text-align:left"></td></tr><tr><td style="text-align:left">.join(items)</td><td style="text-align:left">string</td><td style="text-align:left">items: vec&lt;string&gt;</td></tr></tbody></table></div><h3 id="43-vec"><a class="anchor" href="#43-vec" aria-hidden="true"></a>4.3 vec</h3><p><code>.len()</code>, <code>.is_empty()</code>, <code>.at(i)</code>, <code>.push(x)</code>, <code>.pop()</code>, <code>.insert(i, x)</code>, <code>.remove(i)</code>, <code>.clear()</code>, <code>.reverse()</code>, <code>.sort(cmp)</code>, <code>.map(f)</code>, <code>.filter(f)</code>, <code>.reduce(f, init)</code>, <code>.find(f)</code>, <code>.any(f)</code> / <code>.all(f)</code> / <code>.count(f)</code>, <code>.slice(start, end)</code>, <code>.concat(other)</code>, <code>.unique()</code>, <code>.flatten()</code>, <code>.join(sep)</code>, <code>.chunk(n)</code>, <code>.zip(other)</code>, <code>.take(n)</code>, <code>.skip(n)</code>, <code>.clone()</code>.</p><h3 id="44-map"><a class="anchor" href="#44-map" aria-hidden="true"></a>4.4 map</h3><p><code>.set(k, v)</code>, <code>.get(k)</code>, <code>.has(k)</code>, <code>.delete(k)</code>, <code>.len()</code>, <code>.keys()</code>, <code>.values()</code>, <code>.items()</code>, <code>.merge(other)</code>, <code>.filter(f)</code>, <code>.clone()</code>.</p><h3 id="45-any"><a class="anchor" href="#45-any" aria-hidden="true"></a>4.5 any</h3><p><code>.as_string()</code>, <code>.as_int()</code>, <code>.as_float()</code>, <code>.as_bool()</code>, <code>.as_vec()</code>, <code>.as_map()</code> — all return <code>option&lt;T&gt;</code>, and return <code>none</code> on a type mismatch.</p><h2 id="5-标准库组件"><a class="anchor" href="#5-标准库组件" aria-hidden="true"></a>5. Standard Library Components</h2><h3 id="51-组件总览"><a class="anchor" href="#51-组件总览" aria-hidden="true"></a>5.1 Component Overview</h3><div class="table-wrap"><table><thead><tr><th style="text-align:left">Component</th><th style="text-align:left">Purpose</th><th style="text-align:left">Common entry points</th></tr></thead><tbody><tr><td style="text-align:left">std/http</td><td style="text-align:left">Web server, routing, middleware, client</td><td style="text-align:left">http.serve / http.router / http.fetch</td></tr><tr><td style="text-align:left">std/db</td><td style="text-align:left">SQLite / MySQL / PostgreSQL / SQL Server</td><td style="text-align:left">db.open, db.table</td></tr><tr><td style="text-align:left">std/json</td><td style="text-align:left">JSON encoding and decoding</td><td style="text-align:left">json.encode / json.decode</td></tr><tr><td style="text-align:left">std/str std/vec std/map</td><td style="text-align:left">Collection utilities</td><td style="text-align:left">str.split, vec.sum, map.merge</td></tr><tr><td style="text-align:left">std/time</td><td style="text-align:left">Time and formatting</td><td style="text-align:left">time.now / time.format</td></tr><tr><td style="text-align:left">std/fs std/path</td><td style="text-align:left">Files, directories, paths</td><td style="text-align:left">fs.read_file, path.join</td></tr><tr><td style="text-align:left">std/process std/sys</td><td style="text-align:left">Subprocesses, environment variables, heap information</td><td style="text-align:left">process.run, sys.env_get</td></tr><tr><td style="text-align:left">std/log std/dev</td><td style="text-align:left">Levelled logging, debug output</td><td style="text-align:left">log.info, dev.log</td></tr><tr><td style="text-align:left">std/crypto</td><td style="text-align:left">Hashing, AES, RSA, passwords, randomness</td><td style="text-align:left">crypto.sha256, crypto.password_hash</td></tr><tr><td style="text-align:left">std/encode</td><td style="text-align:left">URL / HTML / CSV / query strings</td><td style="text-align:left">encode.url_encode</td></tr><tr><td style="text-align:left">std/xml std/regex</td><td style="text-align:left">XML parsing, regular expressions</td><td style="text-align:left">xml.parse, regex.replace</td></tr><tr><td style="text-align:left">std/rand std/uuid std/compress</td><td style="text-align:left">Randomness, UUID, gzip</td><td style="text-align:left">rand.int, uuid.v4, compress.gzip</td></tr><tr><td style="text-align:left">std/net std/ws std/redis</td><td style="text-align:left">TCP/UDP, WebSocket, Redis</td><td style="text-align:left">net.tcp_connect, ws.serve</td></tr><tr><td style="text-align:left">std/task std/cache std/queue</td><td style="text-align:left">Scheduled/background tasks, in-process cache, persistent queue</td><td style="text-align:left">task.spawn, cache.set, queue.enqueue</td></tr><tr><td style="text-align:left">std/sync</td><td style="text-align:left">Cross-thread mutex, atomic counters, channels</td><td style="text-align:left">sync.mutex, sync.atomic, sync.channel</td></tr><tr><td style="text-align:left">std/session std/jwt std/validate std/template</td><td style="text-align:left">Common web building blocks</td><td style="text-align:left">Sessions, JWT, validation, templates</td></tr><tr><td style="text-align:left">std/cli</td><td style="text-align:left">Command-line arguments</td><td style="text-align:left">cli.flag / cli.option</td></tr><tr><td style="text-align:left">std/llm</td><td style="text-align:left">Large-model calls (locally simulated)</td><td style="text-align:left">llm.new_client</td></tr><tr><td style="text-align:left">std/zip std/mail</td><td style="text-align:left">ZIP archives, SMTP mail</td><td style="text-align:left">zip.extract, mail.send</td></tr><tr><td style="text-align:left">std/reflect</td><td style="text-align:left">Runtime type information, calling methods by name</td><td style="text-align:left">reflect.type_name, reflect.invoke</td></tr><tr><td style="text-align:left">rust/serde_json</td><td style="text-align:left">Rust interop package</td><td style="text-align:left">json.to_string / json.from_str</td></tr></tbody></table></div><h3 id="52-HTTP-服务端"><a class="anchor" href="#52-HTTP-服务端" aria-hidden="true"></a>5.2 HTTP Server</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;
+
+http.<span class="fn">serve</span>(port: <span class="ty">int</span>, handler: <span class="kw">func</span>(http.request) -&gt; http.response) -&gt; <span class="ty">void</span>
+http.<span class="fn">router</span>(routes: <span class="ty">vec</span>&lt;http.route&gt;) -&gt; <span class="kw">func</span>(http.request) -&gt; http.response
+http.get / post / put / delete / patch / options / <span class="fn">head</span>(path, handler) -&gt; http.route
+http.<span class="kw">static</span>(prefix: <span class="ty">string</span>, dir: <span class="ty">string</span>) -&gt; http.route
+http.<span class="fn">group</span>(prefix, middlewares, routes) -&gt; http.route
+http.<span class="fn">chain</span>(middlewares, handler) -&gt; handler
+http.<span class="fn">cors</span>(origin) / http.<span class="fn">security_headers</span>() / http.<span class="fn">with_headers</span>(<span class="ty">map</span>) / http.<span class="fn">rate_limit</span>(rate, burst)
+http.<span class="fn">openapi</span>(handler, title, version) -&gt; <span class="ty">string</span></code></pre></div><p><strong>Routing</strong>: annotations take priority and are registered automatically when <code>http.router</code> is built; explicit routes such as static assets are passed in as arguments.</p><div class="code-block"><pre><code class="lang-rp"><span class="an">#[get("/users/:id")]</span>
+<span class="kw">func</span> <span class="fn">show</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> id: <span class="ty">string</span> = req.params.<span class="fn">get</span>(<span class="st">"id"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+    <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [id = id]];
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> extra: <span class="ty">vec</span>&lt;http.route&gt; = [http.<span class="kw">static</span>(<span class="st">"/assets"</span>, <span class="st">"public"</span>)];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(extra));
+}</code></pre></div><p>In a path, <code>:name</code> is a parameter and <code>*</code> matches a prefix; catch-all static routes must be placed last among explicit routes.</p><p><strong><code>http.request</code> fields</strong></p><div class="table-wrap"><table><thead><tr><th style="text-align:left">Field</th><th style="text-align:left">Type</th><th style="text-align:left">Description</th></tr></thead><tbody><tr><td style="text-align:left">method / path</td><td style="text-align:left">string</td><td style="text-align:left">Request method / path</td></tr><tr><td style="text-align:left">params</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Path parameters</td></tr><tr><td style="text-align:left">query</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Query parameters</td></tr><tr><td style="text-align:left">headers</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Request headers, lowercase keys</td></tr><tr><td style="text-align:left">body</td><td style="text-align:left">string</td><td style="text-align:left">Raw request body</td></tr><tr><td style="text-align:left">json</td><td style="text-align:left">option&lt;any&gt;</td><td style="text-align:left">Parsed when the body is JSON</td></tr><tr><td style="text-align:left">form</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Form fields</td></tr><tr><td style="text-align:left">cookies</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">Cookies</td></tr><tr><td style="text-align:left">files</td><td style="text-align:left">vec&lt;http.file&gt;</td><td style="text-align:left">Uploaded files</td></tr><tr><td style="text-align:left">client_ip / request_id</td><td style="text-align:left">string</td><td style="text-align:left">Client IP / request ID</td></tr><tr><td style="text-align:left">ctx</td><td style="text-align:left">map&lt;string, any&gt;</td><td style="text-align:left">Data shared between middleware and handlers</td></tr></tbody></table></div><p><strong><code>http.response</code> fields</strong></p><div class="table-wrap"><table><thead><tr><th style="text-align:left">Field</th><th style="text-align:left">Type</th><th style="text-align:left">Default</th></tr></thead><tbody><tr><td style="text-align:left">status</td><td style="text-align:left">int</td><td style="text-align:left">200</td></tr><tr><td style="text-align:left">headers</td><td style="text-align:left">map&lt;string, string&gt;</td><td style="text-align:left">empty</td></tr><tr><td style="text-align:left">body</td><td style="text-align:left">string</td><td style="text-align:left">empty</td></tr><tr><td style="text-align:left">json</td><td style="text-align:left">option&lt;any&gt;</td><td style="text-align:left">none</td></tr><tr><td style="text-align:left">sse</td><td style="text-align:left">option&lt;func(func(http.sse_event) -&gt; void) -&gt; void&gt;</td><td style="text-align:left">none</td></tr></tbody></table></div><p>Exactly one of <code>body</code> / <code>json</code> / <code>sse</code> may be set; specifying two is a compile error. Setting <code>json</code> serializes automatically and sets <code>application/json</code>.</p><p><strong>Middleware</strong>: a factory function <code>func(handler) -&gt; handler</code>.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">require_user</span>(next: <span class="kw">func</span>(http.request) -&gt; http.response)
+    -&gt; <span class="kw">func</span>(http.request) -&gt; http.response {
+    <span class="kw">return</span> <span class="kw">func</span>(<span class="kw">write</span> req: http.request) -&gt; http.response {
+        <span class="kw">let</span> token: <span class="ty">string</span> = req.headers.<span class="fn">get</span>(<span class="st">"authorization"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+        <span class="kw">if</span> token == <span class="st">""</span> {
+            <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = <span class="st">"unauthorized"</span>];
+        }
+        req.ctx.<span class="fn">set</span>(<span class="st">"user"</span>, token);
+        <span class="kw">return</span> <span class="fn">next</span>(req);
+    };
+}
+
+http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>([
+    http.<span class="fn">group</span>(<span class="st">"/api"</span>, [http.<span class="fn">cors</span>(<span class="st">"*"</span>), http.<span class="fn">security_headers</span>(), require_user], [
+        http.<span class="fn">get</span>(<span class="st">"/me"</span>, me)
+    ])
+]));</code></pre></div><p><strong>SSE streaming</strong>:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">ticks</span>(send: <span class="kw">func</span>(http.sse_event) -&gt; <span class="ty">void</span>) -&gt; <span class="ty">void</span> {
+    <span class="fn">send</span>(http.sse_event[event = <span class="st">"tick"</span>, data = <span class="st">"1"</span>]);
+}
+
+<span class="an">#[get("/events")]</span>
+<span class="kw">func</span> <span class="fn">events</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">return</span> http.response[sse = <span class="kw">some</span>(ticks)];
+}</code></pre></div><p><strong>Uploads and downloads</strong>:</p><div class="code-block"><pre><code class="lang-rp"><span class="an">#[post("/upload")]</span>
+<span class="kw">func</span> <span class="fn">upload</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> <span class="kw">mut</span> paths: <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; = [];
+    <span class="kw">for</span> file <span class="kw">in</span> req.files.<span class="fn">clone</span>() {
+        <span class="kw">match</span> http.<span class="fn">save_file</span>(<span class="st">"uploads"</span>, file) {
+            <span class="kw">ok</span>(path) =&gt; { paths.<span class="fn">push</span>(path); }
+            <span class="kw">err</span>(message) =&gt; { }
+        }
+    }
+    <span class="kw">return</span> http.response[status = <span class="nm">201</span>, json = [files = paths]];
+}</code></pre></div><p><strong>Calling third-party services</strong>:</p><div class="code-block"><pre><code class="lang-rp">http.<span class="fn">fetch</span>(method, url, headers, body) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">fetch_file</span>(method, url, headers, path) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">fetch_retry</span>(method, url, headers, body, attempts) -&gt; <span class="ty">result</span>&lt;http.client_response, <span class="ty">string</span>&gt;
+http.<span class="fn">download</span>(url, headers, path) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;</code></pre></div><p><code>http.client_response</code>: <code>status: int</code>, <code>headers: map&lt;string, string&gt;</code> (lowercase keys), <code>body: string</code>. For binary downloads use <code>download</code> or <code>fetch_file</code>.</p><h3 id="53-数据库"><a class="anchor" href="#53-数据库" aria-hidden="true"></a>5.3 Database</h3><div class="code-block"><pre><code class="lang-rp">db.<span class="fn">open</span>(dsn) -&gt; <span class="ty">result</span>&lt;db.conn, <span class="ty">string</span>&gt;</code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">Database</th><th style="text-align:left">DSN example</th></tr></thead><tbody><tr><td style="text-align:left">SQLite</td><td style="text-align:left">storage/app.db, sqlite::memory:</td></tr><tr><td style="text-align:left">MySQL</td><td style="text-align:left">mysql://root:pass@127.0.0.1:3306/app</td></tr><tr><td style="text-align:left">PostgreSQL</td><td style="text-align:left">postgres://user:pass@127.0.0.1:5432/app</td></tr><tr><td style="text-align:left">SQL Server</td><td style="text-align:left">mssql://sa:pass@127.0.0.1:1433/app</td></tr></tbody></table></div><p>Always write SQL with <code>?</code> placeholders; they are rewritten per dialect at runtime.</p><p><strong>Connection methods</strong>: <code>.execute(sql, params)</code>, <code>.execute_many(sql, rows)</code> (binds batches of parameter sets and wraps them in a transaction automatically), <code>.query(sql, params)</code>, <code>.query_one(sql, params)</code>, <code>.last_insert_id()</code>, <code>.begin()</code> / <code>.commit()</code> / <code>.rollback()</code>, <code>.close()</code>.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> conn.<span class="fn">query</span>(<span class="st">"SELECT id, name FROM users WHERE name LIKE ?"</span>, [<span class="st">"%张%"</span>]) {
+    <span class="kw">ok</span>(rows) =&gt; {
+        <span class="kw">for</span> row <span class="kw">in</span> rows {
+            dev.<span class="fn">log</span>(row.<span class="fn">get</span>(<span class="st">"name"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>).<span class="fn">as_string</span>().<span class="fn">unwrap_or</span>(<span class="st">""</span>));
+        }
+    }
+    <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><p><strong>Chained ORM</strong>:</p><div class="code-block"><pre><code class="lang-rp">db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">insert</span>(values)                    <span class="cm">// map / ary</span>
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">where</span>(<span class="st">"id"</span>, <span class="st">"="</span>, <span class="nm">1</span>).<span class="fn">update</span>(changes)
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">where</span>(<span class="st">"id"</span>, <span class="st">"="</span>, <span class="nm">1</span>).<span class="fn">delete</span>()
+db.<span class="fn">table</span>(conn, <span class="st">"users"</span>).<span class="fn">field</span>(<span class="st">"id, name"</span>).<span class="fn">order</span>(<span class="st">"id"</span>, <span class="st">"desc"</span>).<span class="fn">limit</span>(<span class="nm">10</span>).<span class="fn">select</span>()</code></pre></div><p>Builder methods: <code>.field</code>, <code>.where</code>, <code>.where_in</code>, <code>.where_null</code>, <code>.join</code>, <code>.order</code>, <code>.limit</code>, <code>.offset</code>, <code>.select</code>, <code>.find</code>, <code>.count</code>, <code>.value</code>, <code>.column</code>, <code>.insert</code>, <code>.update</code>, <code>.delete</code>, <code>.to_sql</code>, <code>.clone</code>.</p><p><strong>Relation queries</strong>: <code>db.has_many(conn, child_table, foreign_key, parent_id)</code>, <code>db.belongs_to(conn, parent_table, id)</code>, <code>db.belongs_to_by(conn, parent_table, unique_column, value)</code>.</p><h3 id="54-JSON时间文件路径进程与系统"><a class="anchor" href="#54-JSON时间文件路径进程与系统" aria-hidden="true"></a>5.4 JSON, Time, Files, Paths, Processes, and System</h3><div class="code-block"><pre><code class="lang-rp">json.<span class="fn">encode</span>(<span class="ty">any</span>) -&gt; <span class="ty">string</span>
+json.<span class="fn">decode</span>(<span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">any</span>, <span class="ty">string</span>&gt;
+
+time.<span class="fn">now</span>() -&gt; time.datetime          <span class="cm">// .timestamp_ms() / .format(pattern) / .to_string()</span>
+time.<span class="fn">timestamp_ms</span>() / <span class="fn">timestamp_s</span>() -&gt; <span class="ty">int</span>
+time.<span class="fn">format</span>(timestamp_ms, pattern) -&gt; <span class="ty">string</span>
+time.<span class="fn">format_zone</span>(timestamp_ms, pattern, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+time.<span class="fn">parse_zone</span>(text, pattern, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+time.<span class="fn">offset</span>(timestamp_ms, zone) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;   <span class="cm">// 相对 UTC 的秒数（含夏令时）</span>
+time.<span class="fn">zone_names</span>() -&gt; <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt; / time.<span class="fn">local_zone</span>() -&gt; <span class="ty">string</span>
+time.<span class="fn">sleep</span>(ms) -&gt; <span class="ty">void</span>
+
+fs.read_file / write_file / append_file / exists / make_dir / remove_dir
+fs.remove_file / copy_file / rename / file_size / list_dir / list_dir_all / metadata
+fs.<span class="fn">temp_file</span>(prefix) / <span class="fn">temp_dir</span>(prefix)
+
+path.<span class="fn">join</span>(a, b) / <span class="fn">normalize</span>(p) / <span class="fn">absolute</span>(p) / <span class="fn">file_name</span>(p) / <span class="fn">parent</span>(p) / <span class="fn">extension</span>(p) / <span class="fn">stem</span>(p)
+
+process.<span class="fn">run</span>(cmd, args) -&gt; [code: <span class="ty">int</span>, stdout: <span class="ty">string</span>, stderr: <span class="ty">string</span>]
+process.<span class="fn">run_shell</span>(cmd) -&gt; [code: <span class="ty">int</span>, stdout: <span class="ty">string</span>, stderr: <span class="ty">string</span>]   <span class="cm">// 设置环境变量 RIP_DISABLE_SHELL 后调用直接返回 err</span>
+
+sys.<span class="fn">env_get</span>(name) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+sys.<span class="fn">args</span>() -&gt; <span class="ty">vec</span>&lt;<span class="ty">string</span>&gt;
+sys.<span class="fn">exit</span>(code) -&gt; <span class="ty">void</span>
+sys.<span class="fn">platform</span>() -&gt; <span class="ty">string</span>
+sys.<span class="fn">heap_usage</span>() / sys.<span class="fn">gc</span>() -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt;</code></pre></div><h3 id="55-日志与调试"><a class="anchor" href="#55-日志与调试" aria-hidden="true"></a>5.5 Logging and Debugging</h3><div class="code-block"><pre><code class="lang-rp">log.debug / info / warn / <span class="fn">error</span>(text) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_level</span>(<span class="st">"debug"</span> | <span class="st">"info"</span> | <span class="st">"warn"</span> | <span class="st">"error"</span>) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_format</span>(<span class="st">"text"</span> | <span class="st">"json"</span>) -&gt; <span class="ty">void</span>
+log.<span class="fn">set_file</span>(path) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+log.<span class="fn">set_rotate</span>(max_bytes, keep) -&gt; <span class="ty">void</span>       <span class="cm">// 超过上限切成 .1 / .2 …</span>
+
+dev.<span class="fn">log</span>(value) -&gt; <span class="ty">void</span>            <span class="cm">// 调试输出，release 构建剔除</span>
+dev.<span class="fn">log_json</span>(value) / dev.<span class="fn">assert</span>(cond) / dev.<span class="fn">trace</span>(msg) / dev.<span class="fn">time_start</span>(name) / dev.<span class="fn">time_end</span>(name)</code></pre></div><p>Logs in <code>json</code> format automatically carry <code>request_id</code> and <code>trace_id</code> in a request context, so they line up with traces.</p><h3 id="56-加密与编码"><a class="anchor" href="#56-加密与编码" aria-hidden="true"></a>5.6 Cryptography and Encoding</h3><div class="code-block"><pre><code class="lang-rp">crypto.md5 / sha1 / sha256 / <span class="fn">sha512</span>(text) -&gt; <span class="ty">string</span>
+crypto.<span class="fn">hmac_sha256</span>(key, text) -&gt; <span class="ty">string</span>
+crypto.base64_encode / base64_decode / hex_encode / hex_decode
+crypto.<span class="fn">random_hex</span>(bytes) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">password_hash</span>(password) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">password_verify</span>(password, hashed) -&gt; <span class="ty">bool</span>
+crypto.<span class="fn">aes_encrypt</span>(text, key) / <span class="fn">aes_decrypt</span>(cipher, key) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+crypto.<span class="fn">rsa_generate</span>(bits) / rsa_sign / rsa_verify / rsa_encrypt / rsa_decrypt
+
+encode.url_encode / url_decode / html_escape / html_unescape
+encode.<span class="fn">csv_encode</span>(rows) / <span class="fn">csv_parse</span>(text)
+encode.<span class="fn">query_parse</span>(text) / <span class="fn">query_stringify</span>(<span class="ty">map</span>)
+
+xml.<span class="fn">parse</span>(text) -&gt; <span class="ty">result</span>&lt;xml.node, <span class="ty">string</span>&gt;
+xml.stringify / pretty / name / text / attrs / children / find / find_all / escape / unescape
+
+regex.<span class="fn">is_match</span>(pat, text) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+regex.find / find_all / captures / replace
+rand.<span class="ty">int</span>(min, max) / rand.<span class="ty">float</span>() / rand.<span class="ty">bool</span>()
+uuid.<span class="fn">v4</span>() / uuid.<span class="fn">nil</span>()
+compress.<span class="fn">gzip</span>(text) / <span class="fn">gunzip</span>(base64)</code></pre></div><h3 id="57-任务缓存与队列"><a class="anchor" href="#57-任务缓存与队列" aria-hidden="true"></a>5.7 Tasks, Cache, and Queues</h3><div class="code-block"><pre><code class="lang-rp">task.<span class="fn">spawn</span>(<span class="st">"函数名"</span>) -&gt; <span class="ty">bool</span>         <span class="cm">// 独立线程执行一次无参函数</span>
+task.<span class="fn">sleep</span>(ms) -&gt; <span class="ty">void</span>
+
+<span class="an">#[interval("5m")]</span>
+<span class="kw">func</span> <span class="fn">cleanup</span>() -&gt; <span class="ty">void</span> { }
+
+cache.<span class="fn">set</span>(key, value, ttl_ms) -&gt; <span class="ty">void</span>     <span class="cm">// ttl_ms = 0 永不过期</span>
+cache.<span class="fn">get</span>(key) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+cache.<span class="fn">delete</span>(key) / cache.<span class="fn">clear</span>() / cache.<span class="fn">len</span>()
+cache.<span class="fn">configure</span>(max_entries) -&gt; <span class="ty">int</span>
+cache.<span class="fn">stats</span>() -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">int</span>&gt;
+
+queue.<span class="fn">enqueue</span>(dsn, queue, payload, delay_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+queue.<span class="fn">reserve</span>(dsn, queue, lease_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">option</span>&lt;queue.job&gt;, <span class="ty">string</span>&gt;
+queue.<span class="fn">ack</span>(dsn, id) / queue.<span class="fn">fail</span>(dsn, id, message)
+queue.<span class="fn">release_expired</span>(dsn) / queue.<span class="fn">stats</span>(dsn, queue)</code></pre></div><ul><li>Each scheduled task runs in its own thread and interpreter and does not share Rip variables.</li><li><code>cache</code> stores <code>string</code> only; encode structured data with <code>json.encode</code> first.</li><li><code>queue</code> is built on SQLite with at-least-once delivery, so handlers must be idempotent; <code>queue.job</code> fields: <code>id</code> / <code>queue</code> / <code>payload</code> / <code>attempts</code>.</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="an">#[interval("10s")]</span>
+<span class="kw">func</span> <span class="fn">poll</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">match</span> queue.<span class="fn">reserve</span>(<span class="st">"storage/jobs.db"</span>, <span class="st">"mail"</span>, <span class="nm">30000</span>) {
+        <span class="kw">ok</span>(job) =&gt; {
+            <span class="kw">match</span> job {
+                <span class="kw">some</span>(item) =&gt; {
+                    <span class="cm">// 处理 item.payload</span>
+                    queue.<span class="fn">ack</span>(<span class="st">"storage/jobs.db"</span>, item.id);
+                }
+                <span class="kw">none</span> =&gt; { }
+            }
+        }
+        <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+    }
+}</code></pre></div><h3 id="58-会话JWT校验与模板"><a class="anchor" href="#58-会话JWT校验与模板" aria-hidden="true"></a>5.8 Sessions, JWT, Validation, and Templates</h3><div class="code-block"><pre><code class="lang-rp">session.<span class="fn">save</span>(data, secret, ttl_secs) -&gt; <span class="ty">string</span>
+session.<span class="fn">cookie</span>(token, ttl_secs) -&gt; <span class="ty">string</span>   <span class="cm">// 服务端启用 HTTPS 时自动附加 Secure 属性</span>
+session.<span class="fn">load</span>(req, secret) -&gt; <span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;
+session.<span class="fn">clear</span>() -&gt; <span class="ty">string</span>
+session.<span class="fn">csrf_token</span>(secret) / session.<span class="fn">csrf_check</span>(req, secret)
+
+jwt.<span class="fn">sign</span>(payload, secret, ttl_secs) -&gt; <span class="ty">string</span>
+jwt.<span class="fn">verify</span>(token, secret) -&gt; <span class="ty">result</span>&lt;<span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;, <span class="ty">string</span>&gt;
+
+validate.<span class="fn">required</span>(value) -&gt; <span class="ty">option</span>&lt;<span class="ty">string</span>&gt;
+validate.<span class="fn">int_range</span>(value, min, max) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+validate.<span class="fn">string_len</span>(value, min, max) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+validate.<span class="fn">email</span>(value) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;
+
+template.<span class="fn">render</span>(source, data) -&gt; <span class="ty">string</span>
+template.<span class="fn">escape</span>(text) -&gt; <span class="ty">string</span>
+template.<span class="fn">clear_cache</span>() -&gt; <span class="ty">void</span></code></pre></div><p>Template syntax: <code>{{ x }}</code> escapes automatically, <code>{{{ raw }}}</code> outputs verbatim, <code>{{#if x}}…{{else}}…{{/if}}</code>, <code>{{#unless x}}</code>, <code>{{#each items}}{{ @index }}:{{ . }}{{/each}}</code>, <code>{{! comment }}</code>.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">let</span> token: <span class="ty">string</span> = jwt.<span class="fn">sign</span>([<span class="st">"sub"</span> = <span class="st">"42"</span>, <span class="st">"role"</span> = <span class="st">"admin"</span>], secret, <span class="nm">3600</span>);
+<span class="kw">match</span> jwt.<span class="fn">verify</span>(token, secret) {
+    <span class="kw">ok</span>(claims) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = <span class="kw">some</span>(claims)]; }
+    <span class="kw">err</span>(message) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = message]; }
+}</code></pre></div><h3 id="59-网络WebSocketRedisLLM"><a class="anchor" href="#59-网络WebSocketRedisLLM" aria-hidden="true"></a>5.9 Networking, WebSocket, Redis, and LLM</h3><div class="code-block"><pre><code class="lang-rp">net.<span class="fn">tcp_connect</span>(host, port, timeout_ms) -&gt; <span class="ty">result</span>&lt;net.conn, <span class="ty">string</span>&gt;
+net.<span class="fn">tcp_send</span>(conn, data) / <span class="fn">tcp_recv</span>(conn, max_bytes, timeout_ms) / <span class="fn">tcp_recv_line</span>(...)
+net.<span class="fn">tcp_close</span>(conn) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+net.<span class="fn">tcp_listen</span>(host, port) / <span class="fn">tcp_accept</span>(listener, timeout_ms) / <span class="fn">tcp_listener_close</span>(listener)
+net.<span class="fn">udp_bind</span>(host, port) / <span class="fn">udp_send</span>(socket, host, port, data) / <span class="fn">udp_recv</span>(socket, max_bytes, timeout_ms)
+
+ws.<span class="fn">serve</span>(port, <span class="kw">func</span>(ws.conn) -&gt; <span class="ty">void</span>) -&gt; <span class="ty">void</span>   <span class="cm">// 握手超时 10s；浏览器 Origin 与 Host 不同源时拒绝（403）</span>
+ws.<span class="fn">connect</span>(url, timeout_ms) -&gt; <span class="ty">result</span>&lt;ws.conn, <span class="ty">string</span>&gt;
+ws.<span class="fn">send</span>(conn, text) / ws.<span class="fn">recv</span>(conn, timeout_ms) / ws.<span class="fn">ping</span>(conn) / ws.<span class="fn">close</span>(conn)
+
+redis.<span class="fn">connect</span>(url) -&gt; <span class="ty">result</span>&lt;redis.conn, <span class="ty">string</span>&gt;
+redis.<span class="fn">lock</span>(conn, key, ttl_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">option</span>&lt;<span class="ty">string</span>&gt;, <span class="ty">string</span>&gt;
+redis.<span class="fn">unlock</span>(conn, key, token) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+redis.<span class="fn">rate_limit</span>(conn, key, limit, window_ms) -&gt; <span class="ty">result</span>&lt;<span class="ty">bool</span>, <span class="ty">string</span>&gt;
+conn.get / set / setex / setnx / del / exists / expire / incr / decr
+conn.hget / hset / hdel / lpush / rpush / lpop / rpop / brpop / llen / eval / close
+
+llm.<span class="fn">new_client</span>(config) -&gt; llm.client
+client.<span class="fn">chat</span>(msgs, opts) / <span class="fn">chat_stream</span>(msgs, opts, on_chunk) / <span class="fn">chat_json</span>(msgs, opts, target)</code></pre></div><h3 id="510-集合工具与命令行"><a class="anchor" href="#510-集合工具与命令行" aria-hidden="true"></a>5.10 Collection Utilities and the Command Line</h3><div class="code-block"><pre><code class="lang-rp">str.<span class="fn">split</span>(text, sep) / <span class="fn">lines</span>(text) / <span class="fn">join</span>(items, sep)
+str.trim / trim_start / trim_end / lower / upper
+str.contains / starts_with / ends_with
+str.<span class="fn">replace</span>(text, from, to) / <span class="fn">slice</span>(text, start, end)
+str.<span class="fn">repeat</span>(text, n) / <span class="fn">pad_start</span>(text, width, pad) / <span class="fn">pad_end</span>(...)
+str.<span class="fn">index_of</span>(text, sub) / <span class="fn">len</span>(text) / <span class="fn">is_empty</span>(text) / <span class="fn">split_once</span>(text, sep)
+str.<span class="fn">normalize</span>(text, form) -&gt; <span class="ty">result</span>&lt;<span class="ty">string</span>, <span class="ty">string</span>&gt;   <span class="cm">// nfc / nfd / nfkc / nfkd</span>
+str.<span class="fn">graphemes</span>(text) / <span class="fn">grapheme_len</span>(text) / <span class="fn">width</span>(text)
+
+<span class="ty">vec</span>.len / is_empty / contains / index_of / first / last / sum / range / range_between
+<span class="ty">map</span>.keys / values / len / has / get / merge / without
+
+cli.<span class="fn">args</span>() / <span class="fn">command</span>() / <span class="fn">positionals</span>()
+cli.<span class="fn">flag</span>(name) -&gt; <span class="ty">bool</span>
+cli.<span class="ty">option</span>(name, default) -&gt; <span class="ty">string</span></code></pre></div><h3 id="510-并发原语"><a class="anchor" href="#510-并发原语" aria-hidden="true"></a>5.10 Concurrency Primitives</h3><p>Threads do not share Rip variables; when state must be shared, use the <code>std/sync</code> <strong>named</strong> primitives: the same name denotes the same object in HTTP worker threads, <code>parallel</code> branches, <code>task.spawn</code>, and scheduled tasks.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::sync;
+
+<span class="kw">let</span> lock: sync.mutex = sync.<span class="fn">mutex</span>(<span class="st">"report_lock"</span>);
+<span class="kw">let</span> counter: sync.atomic = sync.<span class="fn">atomic</span>(<span class="st">"jobs_done"</span>, <span class="nm">0</span>);
+<span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);</code></pre></div><p><strong>Mutex</strong>: <code>lock()</code> / <code>try_lock()</code> / <code>lock_timeout(ms)</code> / <code>unlock()</code> / <code>is_locked()</code>. After acquiring the lock, release it with <code>defer</code>:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">write_report</span>(text: <span class="ty">string</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">void</span>, <span class="ty">string</span>&gt; {
+    lock.<span class="fn">lock</span>();
+    <span class="kw">defer</span> lock.<span class="fn">unlock</span>();      <span class="cm">// 提前返回或出错也会释放</span>
+    fs.<span class="fn">write_file</span>(<span class="st">"report.txt"</span>, text)?;
+    <span class="kw">return</span> <span class="kw">ok</span>;
+}</code></pre></div><p><strong>Atomic integer</strong>: <code>load()</code> / <code>store(v)</code> / <code>add(v)</code> / <code>sub(v)</code> / <code>swap(v)</code> / <code>compare_swap(old, new)</code>, all <code>SeqCst</code>; <code>add</code> / <code>sub</code> / <code>swap</code> return the old value.</p><p><strong>Channel</strong> (bounded queue that transfers deep copies of values):</p><div class="code-block"><pre><code class="lang-rp">ch.<span class="fn">send</span>(value) / ch.<span class="fn">try_send</span>(value) / ch.<span class="fn">send_timeout</span>(value, ms)
+ch.<span class="fn">recv</span>() / ch.<span class="fn">try_recv</span>() / ch.<span class="fn">recv_timeout</span>(ms)   <span class="cm">// 返回 option&lt;any&gt;</span>
+ch.<span class="fn">close</span>() / ch.<span class="fn">is_closed</span>() / ch.<span class="fn">len</span>() / ch.<span class="fn">capacity</span>()</code></pre></div><ul><li>When full, <code>send</code> blocks; <code>try_send</code> returns <code>false</code>; <code>send_timeout</code> waits at most <code>ms</code>.</li><li>After close, queued values are drained first and <code>recv</code> then yields <code>none</code>; <code>send</code> fails afterwards.</li><li>Received values are <code>any</code>; narrow them with <code>.as_int()</code> / <code>.as_string()</code> and the like.</li><li>Every blocking operation checks the HTTP handler deadline every 20ms and aborts immediately on request timeout; background tasks should use <code>*_timeout</code> or <code>try_*</code> to avoid blocking forever.</li><li><code>sync.exists(name)</code> / <code>sync.remove(name)</code> inspect and clean up the registry; use fixed constants for the names.</li></ul><div class="code-block"><pre><code class="lang-rp"><span class="cm">// 生产者：后台任务</span>
+<span class="kw">func</span> <span class="fn">worker</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);
+    jobs.<span class="fn">send</span>(<span class="nm">42</span>);
+}
+
+<span class="cm">// 消费者：超时轮询</span>
+task.<span class="fn">spawn</span>(<span class="st">"worker"</span>);
+<span class="kw">let</span> jobs: sync.channel = sync.<span class="fn">channel</span>(<span class="st">"jobs"</span>, <span class="nm">64</span>);
+<span class="kw">match</span> jobs.<span class="fn">recv_timeout</span>(<span class="nm">1000</span>) {
+    some(value) =&gt; { dev.<span class="fn">log</span>(value.<span class="fn">as_int</span>().<span class="fn">unwrap_or</span>(<span class="nm">0</span>).<span class="fn">to_string</span>()); }
+    none =&gt; { dev.<span class="fn">log</span>(<span class="st">"1 秒内没有消息"</span>); }
+}</code></pre></div><h3 id="511-时区UnicodeZIP与邮件"><a class="anchor" href="#511-时区UnicodeZIP与邮件" aria-hidden="true"></a>5.11 Time Zones, Unicode, ZIP, and Mail</h3><p><strong>Time zones</strong>: a built-in IANA database (DST included) with no dependency on the system tzdata. Format strings match <code>time.format</code>; <code>%:z</code> prints <code>+08:00</code>.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">match</span> time.<span class="fn">format_zone</span>(ts, <span class="st">"%Y-%m-%d %H:%M:%S %:z"</span>, <span class="st">"Asia/Shanghai"</span>) {
+    ok(text) =&gt; { dev.<span class="fn">log</span>(text); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}
+<span class="kw">match</span> time.<span class="fn">parse_zone</span>(<span class="st">"2024-07-01 08:00:00"</span>, <span class="st">"%Y-%m-%d %H:%M:%S"</span>, <span class="st">"Asia/Shanghai"</span>) {
+    ok(ms) =&gt; { dev.<span class="fn">log</span>(ms.<span class="fn">to_string</span>()); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}
+time.<span class="fn">offset</span>(ts, <span class="st">"America/New_York"</span>)     <span class="cm">// ok(-14400)：夏令时已计入</span>
+time.<span class="fn">zone_names</span>() / time.<span class="fn">local_zone</span>()         <span class="cm">// 全部时区名 / 系统时区名</span></code></pre></div><ul><li>An unknown time zone returns <code>err</code> and never panics.</li><li>Repeated instants during a DST fall-back resolve to the earlier one; instants skipped in spring return <code>err</code>.</li><li><code>time.format</code> / <code>time.parse</code> use the process-local time zone; use <code>*_zone</code> when you need determinism.</li></ul><p><strong>Unicode</strong>: <code>len</code> / <code>slice</code> count code points; grapheme clusters and display width are counted separately.</p><div class="code-block"><pre><code class="lang-rp">str.<span class="fn">normalize</span>(text, <span class="st">"nfc"</span>)        <span class="cm">// nfc / nfd / nfkc / nfkd</span>
+str.<span class="fn">graphemes</span>(text)                 <span class="cm">// vec&lt;string&gt;：emoji、组合音标不拆开</span>
+str.<span class="fn">grapheme_len</span>(text) / str.<span class="fn">width</span>(text)
+
+<span class="st">"👨‍👩‍👧‍👦"</span>.<span class="fn">len</span>()              <span class="cm">// 7（码点）</span>
+<span class="st">"👨‍👩‍👧‍👦"</span>.<span class="fn">grapheme_len</span>()     <span class="cm">// 1（用户可见字符）</span>
+<span class="st">"中文"</span>.<span class="fn">width</span>()               <span class="cm">// 4（终端列数）</span></code></pre></div><p><strong>ZIP</strong>: entry names must be relative paths; absolute paths, drive letters, and <code>..</code> are always rejected.</p><div class="code-block"><pre><code class="lang-rp">zip.<span class="fn">create</span>(path, files) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;          <span class="cm">// map&lt;string, string&gt;</span>
+zip.<span class="fn">add</span>(path, files) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+zip.<span class="fn">list</span>(path) -&gt; <span class="ty">result</span>&lt;<span class="ty">vec</span>&lt;zip.entry&gt;, <span class="ty">string</span>&gt;
+zip.<span class="fn">extract</span>(path, dir) -&gt; <span class="ty">result</span>&lt;<span class="ty">int</span>, <span class="ty">string</span>&gt;
+zip.<span class="fn">read_text</span>(path, entry) / <span class="fn">read_base64</span>(path, entry) / <span class="fn">contains</span>(path, entry)
+
+<span class="kw">match</span> zip.<span class="fn">create</span>(<span class="st">"dist.zip"</span>, [<span class="st">"a.txt"</span> = <span class="st">"hello"</span>, <span class="st">"docs/b.txt"</span> = <span class="st">"world"</span>]) {
+    ok(count) =&gt; { dev.<span class="fn">log</span>(count.<span class="fn">to_string</span>()); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><ul><li><code>zip.entry</code>: <code>name</code> / <code>size</code> / <code>compressed_size</code> / <code>crc32</code> / <code>is_dir</code>.</li><li>Extraction and read limits: 256 MiB per entry, 2 GiB per operation (zip-bomb protection).</li><li><code>read_text</code> requires UTF-8; use <code>read_base64</code> for binary data.</li></ul><p><strong>Mail</strong>: <code>mail.config()</code> returns defaults, then override field by field; field types are checked by the compiler.</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::mail;
+
+<span class="kw">let</span> <span class="kw">mut</span> cfg: mail.config = mail.<span class="fn">config</span>();
+cfg.host = <span class="st">"smtp.example.com"</span>;
+cfg.port = <span class="nm">587</span>;
+cfg.tls = <span class="st">"starttls"</span>;                  <span class="cm">// none / starttls / ssl</span>
+cfg.username = <span class="st">"bot@example.com"</span>;
+cfg.password = <span class="st">"secret"</span>;                <span class="cm">// 只在有 username 时使用</span>
+cfg.from = <span class="st">"bot@example.com"</span>;
+cfg.to = [<span class="st">"ops@example.com"</span>];
+cfg.subject = <span class="st">"日报"</span>;
+cfg.text = <span class="st">"纯文本正文"</span>;
+
+<span class="kw">match</span> mail.<span class="fn">send</span>(cfg) {
+    ok(_) =&gt; { dev.<span class="fn">log</span>(<span class="st">"sent"</span>); }
+    err(message) =&gt; { log.<span class="fn">error</span>(message); }
+}</code></pre></div><ul><li>When both <code>text</code> and <code>html</code> are present the message is <code>multipart/alternative</code>; with attachments the outer type is <code>multipart/mixed</code>.</li><li>Attachments use <code>mail.attachment()</code>: <code>filename</code> is required, and content comes from <code>content_base64</code> (preferred) or <code>path</code>.</li><li><code>timeout_ms</code> limits each socket operation; <code>mail.send</code> blocks, so inside an HTTP handler run it in a background function via <code>task.spawn</code>.</li></ul><h2 id="6-项目与包"><a class="anchor" href="#6-项目与包" aria-hidden="true"></a>6. Projects and Packages</h2><h3 id="61-目录结构"><a class="anchor" href="#61-目录结构" aria-hidden="true"></a>6.1 Directory Structure</h3><div class="code-block"><pre><code class="lang-text">shop/
+├── rip.toml            # 项目清单
+├── main.rp             # 入口（mod shop;）
+├── models/user.rp      # 子模块，mod models;
+├── services/user.rp    # 子模块，mod services;
+├── controllers/*.rp    # 路由处理函数
+├── packages/           # 第三方 Rip 包（vendored）
+├── migrations/         # 数据库迁移
+├── tests/              # 测试
+└── public/             # 静态资源</code></pre></div><p>Rules:</p><ul><li>The first line of every file must be <code>mod directory_name;</code>, and the <code>mod</code> name must match the directory name exactly.</li><li>All <code>.rp</code> files in a directory belong to the same mod; subdirectories are separate mods.</li><li>In project mode (a <code>rip.toml</code> is present) all <code>.rp</code> files are merged recursively; cross-file calls need no <code>use</code> — just call the function by name.</li></ul><h3 id="62-riptoml-模板"><a class="anchor" href="#62-riptoml-模板" aria-hidden="true"></a>6.2 rip.toml Template</h3><div class="code-block"><pre><code class="lang-toml"><span class="kw">[module]</span>
+<span class="fn">name</span> = <span class="st">"shop"</span>
+<span class="fn">version</span> = <span class="st">"0.1.0"</span>
+<span class="fn">entry</span> = <span class="st">"main.rp"</span>
+<span class="kw">
+[build]</span>
+<span class="fn">dir</span> = <span class="st">"dist"</span>
+<span class="fn">name</span> = <span class="st">"shop"</span>
+<span class="cm"># 随产物交付的数据目录</span>
+<span class="fn">copy</span> = [<span class="st">"storage"</span>, <span class="st">"uploads"</span>]
+<span class="kw">
+[compile]</span>
+<span class="cm"># 编译时跳过的数据目录</span>
+<span class="fn">exclude</span> = [<span class="st">"storage"</span>, <span class="st">"uploads"</span>]
+<span class="kw">
+[dependencies]</span>
+<span class="cm"># acme/tools = "^1.2"</span>
+<span class="kw">
+[runtime]</span>
+<span class="fn">log</span> = <span class="st">"chinese"</span>
+<span class="kw">
+[server]</span>
+<span class="fn">workers</span> = <span class="nm">0</span>                 <span class="cm"># 0 = 按 CPU 核数</span>
+<span class="fn">max_connections</span> = <span class="nm">1024</span>
+<span class="fn">max_body_bytes</span> = <span class="nm">8388608</span>
+<span class="fn">request_timeout_ms</span> = <span class="nm">30000</span>
+<span class="fn">health_path</span> = <span class="st">"/healthz"</span>
+<span class="fn">ready_path</span> = <span class="st">"/readyz"</span>
+<span class="fn">metrics_path</span> = <span class="st">""</span>           <span class="cm"># 改成 "/metrics" 暴露指标</span>
+<span class="fn">access_log</span> = true</code></pre></div><h3 id="63-可见性与模块导入"><a class="anchor" href="#63-可见性与模块导入" aria-hidden="true"></a>6.3 Visibility and Module Imports</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">pub</span> <span class="kw">func</span> <span class="fn">create_order</span>(...) -&gt; ... { }     <span class="cm">// 导出给其他模块 / 包</span>
+<span class="kw">pub</span> <span class="kw">type</span> order = [id: <span class="ty">int</span>, total: <span class="ty">int</span>];
+
+<span class="kw">self</span> <span class="kw">func</span> <span class="fn">hash_password</span>(raw: <span class="ty">string</span>) -&gt; <span class="ty">string</span> { }   <span class="cm">// 仅同目录（同 mod）可用</span></code></pre></div><p>Imports use Rust-style <code>use</code> with <code>::</code>-separated paths; calls still follow Rip's <code>module.function()</code>:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> std::http;              <span class="cm">// 别名默认取最后一段：http</span>
+<span class="kw">use</span> std::sys <span class="kw">as</span> sys;        <span class="cm">// 显式改名</span>
+<span class="kw">use</span> acme::tools;            <span class="cm">// packages/acme/tools/ 下的包，别名 tools</span>
+<span class="kw">use</span> rust::serde_json <span class="kw">as</span> json;</code></pre></div><p>Rules:</p><ul><li><code>use</code> imports modules only; item-by-item imports such as <code>use std::http::serve;</code> are not supported (that is the only form).</li><li>After importing, call <code>http.serve(...)</code>, not <code>http::serve(...)</code>; method calls remain <code>value.method()</code>.</li><li>Third-party packages live under <code>packages/</code> at the project root; <code>use</code> paths are relative to <code>packages/</code> (replace <code>/</code> with <code>::</code>).</li><li><code>package</code> and <code>import</code> are not keywords; writing them is a syntax error, with no compatibility path.</li></ul><h2 id="7-编译运行打包发布"><a class="anchor" href="#7-编译运行打包发布" aria-hidden="true"></a>7. Compiling, Running, Packaging, and Publishing</h2><div class="table-wrap"><table><thead><tr><th style="text-align:left">Command</th><th style="text-align:left">Purpose</th></tr></thead><tbody><tr><td style="text-align:left">rip run main.rp</td><td style="text-align:left">Run the source directly; HTTP listens on 127.0.0.1 by default</td></tr><tr><td style="text-align:left">rip run main.rp --host 0.0.0.0 --port 8080</td><td style="text-align:left">Serve external traffic</td></tr><tr><td style="text-align:left">rip run main.rp --cert a.pem --key a.key</td><td style="text-align:left">Enable HTTPS</td></tr><tr><td style="text-align:left">rip dev main.rp</td><td style="text-align:left">Development mode: start with hot reload</td></tr><tr><td style="text-align:left">rip check main.rp [--json]</td><td style="text-align:left">Static checks only (CI gate)</td></tr><tr><td style="text-align:left">rip build</td><td style="text-align:left">Compile a native binary, output to dist/ and dist.zip</td></tr><tr><td style="text-align:left">rip build -o release --no-archive</td><td style="text-align:left">Set the output directory / skip the zip archive</td></tr><tr><td style="text-align:left">rip test [dir|file]</td><td style="text-align:left">Run all #[test] functions</td></tr><tr><td style="text-align:left">rip test --coverage --coverage-min 80</td><td style="text-align:left">Statement coverage; fail below the threshold</td></tr><tr><td style="text-align:left">rip bench [dir|file]</td><td style="text-align:left">Run #[bench] and print timing statistics</td></tr><tr><td style="text-align:left">rip fmt [file|dir] [--check]</td><td style="text-align:left">Format; --check only verifies</td></tr><tr><td style="text-align:left">rip new &lt;name&gt; [--template http|cli|empty]</td><td style="text-align:left">Create a project skeleton (with GitHub / GitLab CI templates)</td></tr><tr><td style="text-align:left">rip doc [file] [-o &lt;dir&gt;] [--json]</td><td style="text-align:left">Generate single-file HTML API docs from /// comments</td></tr><tr><td style="text-align:left">rip search &lt;keyword&gt; [--registry URL]</td><td style="text-align:left">Search the package registry (--json for structured output)</td></tr><tr><td style="text-align:left">rip info &lt;package name&gt; [--registry URL]</td><td style="text-align:left">Show all versions, dependencies, and checksums of a package</td></tr><tr><td style="text-align:left">rip audit [--deny high] [--licenses] [--json]</td><td style="text-align:left">Dependency locking / security advisories / licence audit</td></tr><tr><td style="text-align:left">rip migrate up|down|status</td><td style="text-align:left">Database migrations (migrations/)</td></tr><tr><td style="text-align:left">rip doctor</td><td style="text-align:left">Environment and project self-check</td></tr><tr><td style="text-align:left">rip profile [file] [--top N] [--json]</td><td style="text-align:left">Function-level timing report (call count / total time / self time)</td></tr><tr><td style="text-align:left">rip dap [--port N]</td><td style="text-align:left">DAP debug adapter (stdio or TCP)</td></tr><tr><td style="text-align:left">rip build --target &lt;triple&gt;</td><td style="text-align:left">Cross-compile to the given Rust target</td></tr></tbody></table></div><p><strong>Debugging</strong>: editors attach through <code>rip dap</code>, which supports breakpoints, <code>next</code> / <code>stepIn</code> / <code>stepOut</code>, pause, call stacks, Locals / Globals, and evaluating variable names; program output goes through DAP <code>output</code> events and never breaks the protocol. For chatty services prefer <code>rip dap --port 4711</code> and connect from the editor as <code>debugServer</code>. The repository's <code>editors/vscode/</code> provides syntax highlighting, LSP (<code>rip lsp</code>), and DAP debug configurations; <code>rip.executable</code> sets the toolchain path.</p><p><strong>Performance</strong>: <code>rip profile main.rp</code> lists functions sorted by total time once the run ends; <code>--top 0</code> shows all of them and <code>--json</code> makes CI integration easy; closures and <code>std/*</code> calls are counted too.</p><p><strong>Cross-compilation</strong>: <code>rip build --target x86_64-unknown-linux-gnu</code> uses cargo to build the runtime for the target platform and produce the binary; you must first run <code>rustup target add &lt;triple&gt;</code> and configure a linker in <code>.cargo/config.toml</code> or via <code>RIP_TARGET_LINKER</code> (C dependencies such as sqlite / openssl also need a matching cross toolchain). When target and host match, the built-in compiler fast path is still used.</p><p><strong>Build artifacts</strong>: by default <code>rip build</code> places the executable, static assets, data directories declared by <code>[build] copy</code>, and the README into <code>dist/</code>; the <code>flat</code> layout keeps everything at the root, while the <code>typed</code> layout splits it into <code>bin/</code>, <code>data/</code>, and <code>share/</code>. The delivery directory only needs the executable to run.</p><p><strong>Runtime configuration</strong>: dropping <code>config/rip.toml</code> next to the executable overrides <code>[server]</code> / <code>[runtime]</code> / <code>[db]</code> and other settings without recompiling; environment variables such as <code>RIP_SERVER_HOST</code> and <code>RIP_SERVER_WORKERS</code> are also supported.</p><h2 id="8-开发自己的独立包"><a class="anchor" href="#8-开发自己的独立包" aria-hidden="true"></a>8. Building Your Own Standalone Package</h2><h3 id="81-包的形态"><a class="anchor" href="#81-包的形态" aria-hidden="true"></a>8.1 Package Layout</h3><div class="code-block"><pre><code class="lang-text">packages/acme/tools/
+├── rip.toml        # [module] name / version 必填
+└── tools.rp        # mod tools;</code></pre></div><p>On the importing side:</p><div class="code-block"><pre><code class="lang-rp"><span class="kw">use</span> acme::tools;
+tools.<span class="fn">slugify</span>(<span class="st">"Hello World"</span>);</code></pre></div><ul><li>The directory name (<code>tools</code>) must equal the <code>mod tools;</code> declared in the file.</li><li>Only <code>pub</code> functions / types can be used across packages; <code>self func</code> is private to the package.</li><li>After merged compilation every function and type name is globally unique, so prefix names with your domain to avoid conflicts.</li></ul><h3 id="82-编写与发布"><a class="anchor" href="#82-编写与发布" aria-hidden="true"></a>8.2 Writing and Publishing</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> tools;
+
+<span class="kw">pub</span> <span class="kw">func</span> <span class="fn">slugify</span>(text: <span class="ty">string</span>) -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> str.<span class="fn">lower</span>(str.<span class="fn">replace</span>(str.<span class="fn">trim</span>(text), <span class="st">" "</span>, <span class="st">"-"</span>));
+}
+
+<span class="kw">self</span> <span class="kw">func</span> <span class="fn">internal_note</span>() -&gt; <span class="ty">string</span> {
+    <span class="kw">return</span> <span class="st">"not exported"</span>;
+}</code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> check packages/acme/tools/tools.rp     <span class="cm"># 本地检查</span>
+<span class="kw">rip</span> pack packages/acme/tools               <span class="cm"># 生成 tools.rpa 预编译包</span>
+<span class="kw">rip</span> pub packages/acme/tools --registry https://pkg.example.com</code></pre></div><ul><li>Before publishing you must declare <code>rip.toml</code> with <code>[module] name</code> and a valid <code>version</code>; publishing the same version twice is an error.</li><li>Consumers declare dependencies with semantic version constraints:</li></ul><div class="code-block"><pre><code class="lang-toml"><span class="kw">[dependencies]</span>
+acme/tools = <span class="st">"^1.2"</span></code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> add acme/tools@^<span class="nm">1</span>.<span class="nm">2</span>      <span class="cm"># 写清单并立即拉取到 packages/</span>
+<span class="kw">rip</span> vendor                   <span class="cm"># 只拉取依赖（离线构建用）</span>
+<span class="kw">rip</span> lock --check             <span class="cm"># CI 校验锁定版本</span></code></pre></div><ul><li>After <code>rip pack</code> produces a <code>.rpa</code> you may delete the source; imports stay the same.</li><li>Built-in Rust packages use <code>use rust::serde_json as json;</code> and are called exactly like ordinary packages.</li></ul><h2 id="9-部署要点"><a class="anchor" href="#9-部署要点" aria-hidden="true"></a>9. Deployment Essentials</h2><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> build main.rp -o release
+<span class="cm"># 服务器上：</span>
+./shop --host <span class="nm">0</span>.<span class="nm">0</span>.<span class="nm">0</span>.<span class="nm">0</span> --port <span class="nm">8080</span></code></pre></div><ul><li>External listening requires an explicit <code>--host 0.0.0.0</code> (only loopback is bound by default).</li><li>HTTPS: <code>--cert</code> and <code>--key</code> must be supplied together.</li><li>Built-in probes: <code>/healthz</code> (liveness) and <code>/readyz</code> (readiness); Prometheus metrics are exposed when <code>metrics_path = "/metrics"</code>.</li><li>Behind a reverse proxy, enable <code>trust_proxy = true</code> or configure <code>trusted_proxies</code> so the client IP comes from <code>X-Forwarded-For</code>; enabling <code>trust_proxy</code> without <code>trusted_proxies</code> prints a spoofing warning at startup.</li><li>Tracing: with <code>otlp_endpoint = "http://127.0.0.1:4318"</code> OTLP/HTTP traces are exported automatically, and <code>trace_id</code> in logs correlates directly.</li><li>For rate limiting configure <code>rate_limit</code> / <code>rate_limit_burst</code>; requests beyond it get <code>429</code>.</li></ul><p>Minimal systemd example:</p><div class="code-block"><pre><code class="lang-ini">[Unit]
+Description=shop
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/shop
+ExecStart=/srv/shop/shop --host 0.0.0.0 --port 8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</code></pre></div><h2 id="10-常见错误速查"><a class="anchor" href="#10-常见错误速查" aria-hidden="true"></a>10. Common Errors</h2><div class="table-wrap"><table><thead><tr><th style="text-align:left">Error</th><th style="text-align:left">Cause</th><th style="text-align:left">Fix</th></tr></thead><tbody><tr><td style="text-align:left">mod name 'x' must match directory name 'y'</td><td style="text-align:left">The <code>mod</code> name differs from the directory name</td><td style="text-align:left">Rename <code>mod</code> to the directory name</td></tr><tr><td style="text-align:left">every .rp file in directory ... must start with 'mod ...;'</td><td style="text-align:left">Missing module declaration</td><td style="text-align:left">Add <code>mod directory_name;</code> on the first line</td></tr><tr><td style="text-align:left">type mismatch for 'x': expected string, found int</td><td style="text-align:left">Type mismatch</td><td style="text-align:left">Convert explicitly with .to_string() / .to_int()</td></tr><tr><td style="text-align:left">cannot assign to immutable variable</td><td style="text-align:left">Assigning to a let variable</td><td style="text-align:left">Change it to let mut</td></tr><tr><td style="text-align:left">use of moved value</td><td style="text-align:left">The value was already passed by value</td><td style="text-align:left">Call .clone() before passing, or declare the parameter as read</td></tr><tr><td style="text-align:left">? can only be used in a function returning result</td><td style="text-align:left">The function does not return result</td><td style="text-align:left">Change the signature or use match</td></tr><tr><td style="text-align:left">match is not exhaustive</td><td style="text-align:left">Missing some/none or ok/err</td><td style="text-align:left">Add the missing arms</td></tr><tr><td style="text-align:left">match arm uses '=&gt;', not '='</td><td style="text-align:left">A match arm was written with =</td><td style="text-align:left">Change it to <code>=&gt;</code></td></tr><tr><td style="text-align:left">for requires `for &lt;name&gt; in &lt;vec|map&gt;`</td><td style="text-align:left">A conditional or C-style for was used</td><td style="text-align:left">Use <code>while</code> / <code>loop</code> / <code>for x in y</code></td></tr><tr><td style="text-align:left">type vec&lt;T&gt; has no method 'x'</td><td style="text-align:left">Misspelled method name</td><td style="text-align:left">Check the method table in section 4</td></tr><tr><td style="text-align:left">v[0] fails to compile</td><td style="text-align:left">vec does not support subscripts</td><td style="text-align:left">Use v.0 or v.at(i)</td></tr><tr><td style="text-align:left">scores["k"] fails to compile</td><td style="text-align:left">map does not support subscripts</td><td style="text-align:left">Use scores.get("k")</td></tr><tr><td style="text-align:left">route handler must take exactly one http.request</td><td style="text-align:left">Wrong route handler signature</td><td style="text-align:left">Use func(read req: http.request) -&gt; http.response</td></tr><tr><td style="text-align:left">package "std/x" is not available</td><td style="text-align:left">Not imported, or the module name is wrong</td><td style="text-align:left">Add <code>use std::x;</code></td></tr><tr><td style="text-align:left">unknown attribute '#[x]'</td><td style="text-align:left">Invalid annotation name</td><td style="text-align:left">Only route, interval, test, and bench are supported</td></tr><tr><td style="text-align:left">decimal integer literal cannot initialize string</td><td style="text-align:left">The literal does not match the type</td><td style="text-align:left">Add quotes or convert explicitly</td></tr></tbody></table></div><h2 id="11-完整示例"><a class="anchor" href="#11-完整示例" aria-hidden="true"></a>11. Complete Examples</h2><h3 id="111-JSON-API路由-+-校验-+-JWT"><a class="anchor" href="#111-JSON-API路由-+-校验-+-JWT" aria-hidden="true"></a>11.1 JSON API (routing + validation + JWT)</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">mod</span> api;
+
+<span class="kw">use</span> std::http;
+<span class="kw">use</span> std::jwt;
+<span class="kw">use</span> std::validate;
+
+<span class="kw">static</span> SECRET: <span class="ty">string</span> = <span class="st">"change-me"</span>;
+
+<span class="an">#[post("/login")]</span>
+<span class="kw">func</span> <span class="fn">login</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> name: <span class="ty">string</span> = req.form.<span class="fn">get</span>(<span class="st">"name"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+
+    <span class="kw">match</span> validate.<span class="fn">string_len</span>(name, <span class="nm">1</span>, <span class="nm">32</span>) {
+        <span class="kw">ok</span>(valid) =&gt; {
+            <span class="kw">let</span> token: <span class="ty">string</span> = jwt.<span class="fn">sign</span>([<span class="st">"sub"</span> = valid], SECRET, <span class="nm">3600</span>);
+            <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = [token = token]];
+        }
+        <span class="kw">err</span>(message) =&gt; {
+            <span class="kw">return</span> http.response[status = <span class="nm">400</span>, json = [error = message]];
+        }
+    }
+}
+
+<span class="an">#[get("/me")]</span>
+<span class="kw">func</span> <span class="fn">me</span>(<span class="kw">read</span> req: http.request) -&gt; http.response {
+    <span class="kw">let</span> token: <span class="ty">string</span> = req.headers.<span class="fn">get</span>(<span class="st">"authorization"</span>).<span class="fn">unwrap_or</span>(<span class="st">""</span>);
+    <span class="kw">match</span> jwt.<span class="fn">verify</span>(token, SECRET) {
+        <span class="kw">ok</span>(claims) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">200</span>, json = <span class="kw">some</span>(claims)]; }
+        <span class="kw">err</span>(message) =&gt; { <span class="kw">return</span> http.response[status = <span class="nm">401</span>, body = message]; }
+    }
+}
+
+<span class="kw">func</span> <span class="fn">main</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">let</span> routes: <span class="ty">vec</span>&lt;http.route&gt; = [];
+    http.<span class="fn">serve</span>(<span class="nm">8080</span>, http.<span class="fn">router</span>(routes));
+}</code></pre></div><h3 id="112-分页查询ORM"><a class="anchor" href="#112-分页查询ORM" aria-hidden="true"></a>11.2 Paged Queries (ORM)</h3><div class="code-block"><pre><code class="lang-rp"><span class="kw">func</span> <span class="fn">list_users</span>(<span class="kw">read</span> conn: db.conn, page: <span class="ty">int</span>, size: <span class="ty">int</span>) -&gt; <span class="ty">result</span>&lt;<span class="ty">vec</span>&lt;<span class="ty">map</span>&lt;<span class="ty">string</span>, <span class="ty">any</span>&gt;&gt;, <span class="ty">string</span>&gt; {
+    <span class="kw">let</span> offset: <span class="ty">int</span> = (page - <span class="nm">1</span>) * size;
+    <span class="kw">return</span> db.<span class="fn">table</span>(conn, <span class="st">"users"</span>)
+        .<span class="fn">field</span>(<span class="st">"id, name, email"</span>)
+        .<span class="fn">order</span>(<span class="st">"id"</span>, <span class="st">"desc"</span>)
+        .<span class="fn">limit</span>(size)
+        .<span class="fn">offset</span>(offset)
+        .<span class="fn">select</span>();
+}</code></pre></div><h3 id="113-定时任务-+-队列"><a class="anchor" href="#113-定时任务-+-队列" aria-hidden="true"></a>11.3 Scheduled Tasks + Queues</h3><div class="code-block"><pre><code class="lang-rp"><span class="an">#[interval("30s")]</span>
+<span class="kw">func</span> <span class="fn">send_mail</span>() -&gt; <span class="ty">void</span> {
+    <span class="kw">match</span> queue.<span class="fn">reserve</span>(<span class="st">"storage/jobs.db"</span>, <span class="st">"mail"</span>, <span class="nm">60000</span>) {
+        <span class="kw">ok</span>(job) =&gt; {
+            <span class="kw">match</span> job {
+                <span class="kw">some</span>(item) =&gt; {
+                    <span class="cm">// 调用邮件服务；失败时交给队列重试</span>
+                    <span class="kw">if</span> item.attempts &gt; <span class="nm">3</span> {
+                        queue.<span class="fn">fail</span>(<span class="st">"storage/jobs.db"</span>, item.id, <span class="st">"too many attempts"</span>);
+                    } <span class="kw">else</span> {
+                        queue.<span class="fn">ack</span>(<span class="st">"storage/jobs.db"</span>, item.id);
+                    }
+                }
+                <span class="kw">none</span> =&gt; { }
+            }
+        }
+        <span class="kw">err</span>(message) =&gt; { log.<span class="fn">error</span>(message); }
+    }
+}</code></pre></div><h2 id="12-依赖管理rip-vendor"><a class="anchor" href="#12-依赖管理rip-vendor" aria-hidden="true"></a>12. Dependency Management: rip vendor</h2><blockquote>This section is merged from the rip vendor User Guide and covers the commands and workflow from a user's perspective.</blockquote><p><code>rip vendor</code> completes the third-party packages declared in <code>[dependencies]</code> (transitive dependencies included) into the project's <code>packages/</code> directory and freezes the current dependency state into <code>rip.lock</code>.</p><p>In one sentence: <strong>a freshly cloned repository can build exactly the same dependencies as the original author, with no network access.</strong></p><hr><h3 id="121-命令"><a class="anchor" href="#121-命令" aria-hidden="true"></a>12.1 Command</h3><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor            <span class="cm"># 拉取缺失依赖，生成/更新 rip.lock</span>
+<span class="kw">rip</span> vendor --check    <span class="cm"># 只校验，不写入（CI 用）</span></code></pre></div><div class="table-wrap"><table><thead><tr><th style="text-align:left">Item</th><th style="text-align:left">Description</th></tr></thead><tbody><tr><td style="text-align:left">Working directory</td><td style="text-align:left">Must be a project root containing rip.toml</td></tr><tr><td style="text-align:left">Global options</td><td style="text-align:left">--offline (no network; missing packages fail immediately), --deny-warnings</td></tr><tr><td style="text-align:left">Exit code</td><td style="text-align:left">0 success; 1 dependency or checksum failure; 2 not a Rip project</td></tr></tbody></table></div><p>Normal output:</p><div class="code-block"><pre><code class="lang-text">vendored 2 package(s) into .\packages; wrote .\rip.lock</code></pre></div><p>When there are no dependencies:</p><div class="code-block"><pre><code class="lang-text">no packages to vendor; wrote .\rip.lock</code></pre></div><p>When verification passes:</p><div class="code-block"><pre><code class="lang-text">rip.lock: ok (2 packages)</code></pre></div><hr><h3 id="122-快速开始"><a class="anchor" href="#122-快速开始" aria-hidden="true"></a>12.2 Quick Start</h3><p><code>rip.toml</code>:</p><div class="code-block"><pre><code class="lang-toml"><span class="kw">[module]</span>
+<span class="fn">name</span> = <span class="st">"app"</span>
+<span class="fn">version</span> = <span class="st">"0.1.0"</span>
+<span class="fn">entry</span> = <span class="st">"main.rp"</span>
+<span class="kw">
+[registry]</span>
+<span class="fn">source</span> = <span class="st">"https://registry.example.com"</span>
+<span class="kw">
+[dependencies]</span>
+<span class="st">"acme/tools"</span> = <span class="st">"^1.2"</span></code></pre></div><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor</code></pre></div><p>After running:</p><div class="code-block"><pre><code class="lang-text">app/
+├── rip.toml
+├── rip.lock
+└── packages/
+    └── acme/tools/
+        ├── .rip-registry     # 由 rip 写入的来源标记
+        ├── rip.toml
+        └── tools.rp</code></pre></div><p>Commit <code>packages/</code> together with <code>rip.lock</code> and the repository can build offline.</p><hr><h3 id="123-它做了什么"><a class="anchor" href="#123-它做了什么" aria-hidden="true"></a>12.3 What It Does</h3><p><code>rip vendor</code> performs three steps in order (sharing one implementation with <code>rip lock</code>):</p><ul><li>Already present locally and satisfying the constraint → no network access.</li><li>Missing locally or not satisfying it → fetched from <code>[registry]</code>.</li><li>If the package is already in the lock file, the locked version is preferred, guaranteeing reproducibility.</li></ul><ol><li><strong>Validate constraints</strong>: version ranges, conflicts between multiple constraints on the same package, and completeness of transitive dependencies.</li><li><strong>Freeze the result</strong>: scan <code>packages/</code>, aggregate by <strong>package directory</strong>, and write <code>rip.lock</code>.</li></ol><p><code>packages/</code> is itself Rip's vendored directory, so "fetching" and "locking" are the same action here.</p><hr><h3 id="124-锁文件格式"><a class="anchor" href="#124-锁文件格式" aria-hidden="true"></a>12.4 Lock File Format</h3><div class="code-block"><pre><code class="lang-toml"><span class="cm"># generated by 'rip lock'; do not edit</span>
+<span class="fn">version</span> = <span class="nm">1</span>
+<span class="fn">registry</span> = <span class="st">"https://registry.example.com"</span>   <span class="cm"># 仅当配置了 [registry] source</span>
+<span class="kw">
+[[package]</span>]
+<span class="fn">name</span> = <span class="st">"acme/tools"</span>                <span class="cm"># 包目录相对 packages/ 的路径</span>
+<span class="fn">version</span> = <span class="st">"1.4.0"</span>                  <span class="cm"># 来自包内 rip.toml 的 [module] version</span>
+<span class="fn">source</span> = <span class="st">"packages/acme/tools"</span>     <span class="cm"># 本地目录</span>
+<span class="fn">sha256</span> = <span class="st">"26c1200f1fb6…"</span>           <span class="cm"># 包目录内全部文件的摘要</span>
+<span class="fn">deps</span> = [<span class="st">"acme/base"</span>]               <span class="cm"># 直接依赖的包名</span></code></pre></div><p>A few conventions:</p><ul><li><strong>One record per package directory</strong>. Multiple <code>.rp</code> files in the same directory belong to one package and never appear twice.</li><li><strong>Package name = directory relative path</strong>, consistent with <code>use acme::tools;</code> and with the keys of <code>[dependencies]</code>.</li><li><strong>The checksum covers the whole directory</strong>: entries are sorted by relative path and "path + file content" is hashed with SHA-256, so multi-file packages verify stably.</li><li>Do not edit it by hand; re-run <code>rip vendor</code> when an update is needed.</li></ul><hr><h3 id="125-校验规则"><a class="anchor" href="#125-校验规则" aria-hidden="true"></a>12.5 Verification Rules</h3><p><code>rip vendor --check</code>, as well as <code>rip run</code> / <code>rip dev</code> / <code>rip build</code> / <code>rip check</code> / <code>rip test</code>, verify the lock file when reading the project:</p><div class="table-wrap"><table><thead><tr><th style="text-align:left">Situation</th><th style="text-align:left">Message</th></tr></thead><tbody><tr><td style="text-align:left">Lock file missing</td><td style="text-align:left">rip.lock is missing; run 'rip vendor' to generate it</td></tr><tr><td style="text-align:left">Package content modified</td><td style="text-align:left">package 'x' does not match rip.lock</td></tr><tr><td style="text-align:left">Package version changed</td><td style="text-align:left">package 'x' version changed from 'a' to 'b'</td></tr><tr><td style="text-align:left">Direct dependency list changed</td><td style="text-align:left">package 'x' dependency list changed</td></tr><tr><td style="text-align:left">A locked package disappeared</td><td style="text-align:left">package 'x' from rip.lock is missing</td></tr><tr><td style="text-align:left">packages/ contains an unrecorded package</td><td style="text-align:left">package 'x' is not recorded in rip.lock</td></tr></tbody></table></div><p>If any of the above appears, run <code>rip vendor</code> again.</p><blockquote>Note: <code>--check</code> requires an existing lock file. For a newly cloned repository, run <code>rip vendor</code> once first.</blockquote><hr><h3 id="126-典型工作流"><a class="anchor" href="#126-典型工作流" aria-hidden="true"></a>12.6 Typical Workflows</h3><h4 id="首次引入依赖"><a class="anchor" href="#首次引入依赖" aria-hidden="true"></a>Adding dependencies for the first time</h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> add acme/tools@^<span class="nm">1</span>.<span class="nm">2</span>   <span class="cm"># 写入 rip.toml 并立即拉取</span>
+<span class="kw">rip</span> vendor                <span class="cm"># 生成 rip.lock</span></code></pre></div><p>Commit <code>rip.toml</code>, <code>rip.lock</code>, and <code>packages/</code>.</p><h4 id="新克隆仓库"><a class="anchor" href="#新克隆仓库" aria-hidden="true"></a>Cloning a new repository</h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor     <span class="cm"># 还原 packages/ 与 rip.lock</span>
+<span class="kw">rip</span> run main.rp</code></pre></div><p>If <code>packages/</code> is committed with the repository, this step never touches the network.</p><h4 id="升级依赖"><a class="anchor" href="#升级依赖" aria-hidden="true"></a>Upgrading dependencies</h4><div class="code-block"><pre><code class="lang-bash"><span class="cm"># 修改 rip.toml 的约束，例如 ^1.2 -&gt; ^1.3</span>
+<span class="kw">rip</span> vendor</code></pre></div><ul><li>When the old locked version still satisfies the new constraint, it is kept (preserving reproducibility).</li><li>When the old version does not satisfy the new constraint, a backtracking solve runs again from the registry under the dependency constraints (only one version per package); when there is no solution, the origin of each constraint is reported.</li></ul><h4 id="CI"><a class="anchor" href="#CI" aria-hidden="true"></a>CI</h4><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor --check</code></pre></div><p>Verification only, no writes; if the lock file disagrees with <code>packages/</code>, a non-zero exit code is returned.</p><p>Security advisories and licence checks: <code>rip audit --deny high --licenses</code> (advisories come from <code>[registry] advisories</code> / <code>RIP_ADVISORIES</code> / <code>&lt;source&gt;/v1/advisories.json</code>); to inspect the registry use <code>rip search &lt;keyword&gt;</code> and <code>rip info &lt;package name&gt;</code>.</p><p>Fully offline environments:</p><div class="code-block"><pre><code class="lang-bash"><span class="kw">rip</span> vendor --check --offline</code></pre></div><hr><h3 id="127-与包源离线的关系"><a class="anchor" href="#127-与包源离线的关系" aria-hidden="true"></a>12.7 Relationship to the Registry and Offline Mode</h3><ul><li>The registry is set by <code>[registry] source</code> and supports <code>https://</code>, <code>file://</code>, and local directories; <code>http://</code> is allowed only for <code>localhost</code> / <code>127.0.0.1</code> / <code>::1</code> (local development), and any other http source is rejected outright. Downloads from a remote source must carry an index <code>sha256</code>; a missing digest is rejected. When unset, the public registry <code>https://registry.rip-lang.dev</code> is used and can be overridden with the <code>RIP_REGISTRY</code> environment variable (<code>rip pub</code> still needs an explicit target and never falls back to the public registry); when all dependencies are vendored, the registry is never contacted.</li><li>Access tokens: <code>[registry] token_env = "MY_TOKEN"</code> names the environment variable; if unset, <code>RIP_REGISTRY_TOKEN</code> is read.</li><li>With <code>--offline</code> or <code>[registry] offline = true</code> there is no network access; missing dependencies then fail immediately:</li></ul><div class="code-block"><pre><code class="lang-text">  error: package 'acme/tools' is not vendored and network access is disabled</code></pre></div><ul><li>Package directories fetched by rip contain a <code>.rip-registry</code> marker; packages <strong>placed into <code>packages/</code> by hand are never silently overwritten</strong> — delete them first or adjust them to a matching version.</li></ul><hr><h3 id="128-常见问题"><a class="anchor" href="#128-常见问题" aria-hidden="true"></a>12.8 FAQ</h3><p><strong>Q: Should <code>packages/</code> be committed?</strong></p><p>Either way works:</p><ul><li>Commit: fully offline builds, at the cost of a larger repository;</li><li>Do not commit: restore from the registry with <code>rip vendor</code>, which requires access to <code>[registry]</code>.</li></ul><p><strong>Q: What is the difference between <code>rip vendor</code> and <code>rip lock</code>?</strong></p><p>Resolution and writing are identical. The output of <code>rip vendor</code> focuses on "how many packages were vendored", semantically emphasizing that dependencies are frozen into <code>packages/</code>; both generate byte-for-byte identical lock files.</p><p><strong>Q: Why did nothing upgrade after I changed the constraint?</strong></p><p>Because the locked version still satisfies the new constraint. To force re-selection, delete the corresponding record from <code>rip.lock</code> (or delete the whole lock file) and run <code>rip vendor</code> again.</p><p><strong>Q: It reports <code>already exists under packages/ ... was not fetched by rip</code>?</strong></p><p>That directory was placed by hand. Delete it so <code>rip vendor</code> fetches the package again, or adjust the <code>[dependencies]</code> constraint to match the version in that directory.</p><p><strong>Q: It reports <code>checksum mismatch</code>?</strong></p><p>The zip returned by the registry does not match the <code>sha256</code> in the index. Check whether the registry content was replaced, or contact the registry maintainer.</p><p><strong>Q: How do I publish my own package?</strong></p><p><code>rip vendor</code> only consumes dependencies. To publish, use <code>rip pub</code>; see Chapter 7, "Compiling, Running, Packaging, and Publishing".</p>
+</div>
+</main>
+<button class="to-top" id="toTop" title="Back to top">↑</button>
+<script>
+(function(){
+  const content=document.getElementById('content');
+  const toc=document.getElementById('toc');
+  const results=document.getElementById('results');
+  const input=document.getElementById('q');
+  const headings=[...content.querySelectorAll('h1,h2,h3')].filter(h=>h.tagName!=='H1');
+
+  /* 目录 */
+  const tocLinks=[];
+  headings.forEach(h=>{
+    const li=document.createElement('li');
+    const a=document.createElement('a');
+    a.href='#'+h.id;
+    a.textContent=h.textContent.replace('#','').trim();
+    a.className='lv'+h.tagName[1];
+    li.appendChild(a);toc.appendChild(li);tocLinks.push({a,h});
+  });
+
+  /* 搜索索引：标题 + 所属小节正文 */
+  const sections=headings.map((h,i)=>{
+    const parts=[];
+    let node=h.nextElementSibling;
+    const limit=i+1<headings.length?headings[i+1]:null;
+    while(node&&node!==limit){
+      parts.push(node.innerText||'');
+      node=node.nextElementSibling;
+    }
+    return {h,title:h.textContent.replace('#','').trim(),body:parts.join(' ').replace(/\s+/g,' ')};
+  });
+
+  function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function clip(text,index,length){
+    const start=Math.max(0,index-34);
+    return (start>0?'…':'')+text.slice(start,index+length+50)+'…';
+  }
+  function mark(text,q){
+    const i=text.toLowerCase().indexOf(q);
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<b>'+esc(text.slice(i,i+q.length))+'</b>'+esc(text.slice(i+q.length));
+  }
+
+  let active=-1;
+  function close(){results.hidden=true;results.innerHTML='';active=-1;}
+  function search(){
+    const q=input.value.trim().toLowerCase();
+    if(!q){close();return;}
+    const hits=[];
+    for(const s of sections){
+      const inTitle=s.title.toLowerCase().includes(q);
+      const bodyIndex=s.body.toLowerCase().indexOf(q);
+      if(!inTitle&&bodyIndex<0)continue;
+      hits.push({s,inTitle,bodyIndex,score:inTitle?2:1});
+    }
+    hits.sort((a,b)=>b.score-a.score||a.s.title.localeCompare(b.s.title));
+    results.innerHTML='';
+    if(!hits.length){
+      results.innerHTML='<div class="empty">没有匹配的章节</div>';
+    }else{
+      hits.slice(0,20).forEach((hit,i)=>{
+        const a=document.createElement('a');
+        a.className='result'+(i===0?' active':'');
+        a.href='#'+hit.s.h.id;
+        const snippet=hit.inTitle?hit.s.body.slice(0,70):clip(hit.s.body,hit.bodyIndex,q.length);
+        a.innerHTML='<div class="rt">'+mark(hit.s.title,q)+'</div>'+
+                    '<div class="rp">'+(snippet?mark(snippet,q):'')+'</div>';
+        a.addEventListener('click',()=>{close();input.blur();});
+        results.appendChild(a);
+      });
+    }
+    results.hidden=false;active=0;
+  }
+  input.addEventListener('input',search);
+  input.addEventListener('focus',()=>{if(input.value.trim())search();});
+  input.addEventListener('keydown',e=>{
+    const items=[...results.querySelectorAll('.result')];
+    if(e.key==='Escape'){input.value='';close();input.blur();return;}
+    if(!items.length)return;
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      active=(active+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
+      items.forEach((el,i)=>el.classList.toggle('active',i===active));
+      items[active].scrollIntoView({block:'nearest'});
+    }else if(e.key==='Enter'){
+      e.preventDefault();
+      const target=items[active]||items[0];
+      if(target){target.click();location.hash=target.getAttribute('href');}
+      close();
+    }
+  });
+  document.addEventListener('click',e=>{
+    if(!results.contains(e.target)&&e.target!==input)close();
+  });
+  document.addEventListener('keydown',e=>{
+    const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if(e.key==='/'&&!typing){e.preventDefault();input.focus();input.select();}
+  });
+
+  /* 滚动：高亮当前小节 + 进度条 + 回到顶部 */
+  const linksById=new Map(tocLinks.map(x=>[x.h.id,x]));
+  let ticking=false;
+  function onScroll(){
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(()=>{
+      ticking=false;
+      const y=window.scrollY+90;
+      let current=null;
+      for(const h of headings){if(h.offsetTop<=y)current=h;else break;}
+      tocLinks.forEach(x=>x.a.classList.toggle('active',current&&x.h===current));
+      const top=document.getElementById('toTop');
+      top.classList.toggle('show',window.scrollY>600);
+      const max=document.documentElement.scrollHeight-window.innerHeight;
+      document.getElementById('progress').style.width=(max>0?window.scrollY/max*100:0)+'%';
+    });
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* 复制按钮 */
+  document.querySelectorAll('.code-block').forEach(block=>{
+    const btn=document.createElement('button');
+    btn.className='copy';btn.type='button';btn.textContent='复制';
+    btn.addEventListener('click',()=>{
+      const code=block.querySelector('code');
+      const text=code?code.innerText:'';
+      const done=()=>{btn.textContent='已复制';btn.classList.add('done');
+        setTimeout(()=>{btn.textContent='复制';btn.classList.remove('done');},1200);};
+      if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(text).then(done).catch(()=>fallback(text,done));
+      }else{fallback(text,done);}
+    });
+    block.appendChild(btn);
+  });
+  function fallback(text,done){
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* 标题锚点点击后闪烁定位 */
+  document.querySelectorAll('.anchor').forEach(a=>{
+    a.addEventListener('click',()=>{
+      const h=a.parentElement;
+      h.classList.remove('flash');void h.offsetWidth;h.classList.add('flash');
+    });
+  });
+
+  /* 主题切换 */
+  const themeBtn=document.getElementById('theme');
+  const saved=localStorage.getItem('rip-doc-theme');
+  if(saved)document.documentElement.dataset.theme=saved;
+  themeBtn.addEventListener('click',()=>{
+    const current=document.documentElement.dataset.theme
+      ||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    const next=current==='dark'?'light':'dark';
+    document.documentElement.dataset.theme=next;
+    localStorage.setItem('rip-doc-theme',next);
+  });
+
+  /* 移动端目录 */
+  document.getElementById('menu').addEventListener('click',()=>{
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+  toc.addEventListener('click',e=>{
+    if(e.target.tagName==='A'&&innerWidth<=1000){
+      document.getElementById('sidebar').classList.remove('open');
+    }
+  });
+  document.getElementById('toTop').addEventListener('click',()=>{
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  if(location.hash){
+    const target=document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if(target){setTimeout(()=>target.scrollIntoView({block:'start'}),30);}
+  }
+})();
+</script>
+</body>
+</html>

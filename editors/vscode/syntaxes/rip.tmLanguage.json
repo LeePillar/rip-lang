@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rip",
+  "scopeName": "source.rip",
+  "fileTypes": [
+    "rp"
+  ],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#attributes" },
+    { "include": "#strings" },
+    { "include": "#chars" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#functions" },
+    { "include": "#module-path" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.rip",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.rip",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.rip",
+          "match": "#\\[[A-Za-z_][A-Za-z0-9_]*(?:\\([^\\]]*\\))?\\]"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.rip",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.rip", "match": "\\\\." }
+          ]
+        }
+      ]
+    },
+    "chars": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.rip",
+          "match": "'(\\\\.|[^'\\\\])'"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.rip",
+          "match": "\\b(?:0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:[0-9][0-9_]*)(?:\\.[0-9_]+)?(?:[eE][+-]?[0-9_]+)?)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.rip",
+          "match": "\\b(?:if|else|for|in|loop|while|match|break|continue|return|parallel|defer|async|await)\\b"
+        },
+        {
+          "name": "keyword.other.rip",
+          "match": "\\b(?:mod|use|as|pub|type|interface|enum|func|let|mut|const|static|self|read|write|share)\\b"
+        },
+        {
+          "name": "constant.language.rip",
+          "match": "\\b(?:true|false|null|ok|err|some|none)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.rip",
+          "match": "\\b(?:int|int2|int8|int16|float|string|char|bool|void|any|vec|map|option|result|share|task)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.rip",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()"
+        }
+      ]
+    },
+    "module-path": {
+      "patterns": [
+        {
+          "name": "variable.other.module.rip",
+          "match": "\\b(?:std|rust)(?:\\.[A-Za-z_][A-Za-z0-9_]*)+"
+        }
+      ]
+    }
+  }
+}

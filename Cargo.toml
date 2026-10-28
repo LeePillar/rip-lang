@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rp-ast",
+    "crates/rp-lexer",
+    "crates/rp-parser",
+    "crates/rp-types",
+    "crates/rp-ownership",
+    "crates/rp-runtime",
+    "crates/rp-core",
+    "crates/rp-rust-interop",
+    "crates/rp-cli",
+    "crates/rp-lsp",
+    "crates/rp-dap",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[profile.release]
+# 压测取向：最高性能与最小产物体积（fat LTO + 单 codegen 单元）。
+# 不设 panic = "abort"：服务端按请求 catch_unwind 做故障隔离，必须保留 unwind。
+opt-level = 3
+lto = "fat"
+codegen-units = 1

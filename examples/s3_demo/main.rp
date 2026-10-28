@@ -1,0 +1,81 @@
+mod s3_demo;
+
+// S3 兼容对象存储示例：协议实现在 packages/s3/s3.rp（纯 Rip），
+// 运行时只提供 HTTP、哈希、时间、URL 编码这些通用能力。
+//
+// 1) 默认运行会校验 AWS 官方 SigV4 测试向量；
+// 2) 设置 S3_ENDPOINT 后对真实服务做一次 put/get（MinIO 或 S3 兼容端点）。
+
+use std::dev;
+use std::sys;
+use s3;
+
+const DEMO_EMPTY_SHA: string = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+// AWS 文档给出的 GET Object 签名样例。
+func vector_request() -> string {
+    let empty: string = DEMO_EMPTY_SHA.clone();
+    return "GET\n/test.txt\n\n"
+        + "host:examplebucket.s3.amazonaws.com\n"
+        + "range:bytes=0-9\n"
+        + "x-amz-content-sha256:" + empty.clone() + "\n"
+        + "x-amz-date:20130524T000000Z\n\n"
+        + "host;range;x-amz-content-sha256;x-amz-date\n"
+        + empty;
+}
+
+func vector_signature() -> string {
+    return s3.signature(
+        "AKIAIOSFODNN7EXAMPLE",
+        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "us-east-1",
+        "20130524",
+        "20130524T000000Z",
+        vector_request()
+    );
+}
+
+#[test]
+func test_signature_matches_aws_vector() -> void {
+    dev.assert(vector_signature() == "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41");
+}
+
+#[test]
+func test_object_path_encodes_segments() -> void {
+    dev.assert(s3.canonical_object_path("demo", "图片/1.png") == "/demo/%E5%9B%BE%E7%89%87/1.png");
+}
+
+func main() -> void {
+    dev.assert(vector_signature() == "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41");
+    print("sigv4 vector ok");
+
+    match sys.env_get("S3_ENDPOINT") {
+        some(endpoint) => { live(endpoint); }
+        none => { print("set S3_ENDPOINT to run live test"); }
+    }
+}
+
+func live(endpoint: string) -> void {
+    let bucket: string = sys.env_get("S3_BUCKET").unwrap_or("demo");
+    let access: string = sys.env_get("S3_ACCESS_KEY").unwrap_or("minioadmin");
+    let secret: string = sys.env_get("S3_SECRET_KEY").unwrap_or("minioadmin");
+    let cfg: oss_config = s3.new_config(endpoint, "us-east-1", bucket, access, secret);
+
+    match s3.put_text(cfg.clone(), "hello.txt", "hello s3", "text/plain; charset=utf-8") {
+        ok(saved) => { print("put ok: " + saved.to_string()); }
+        err(message) => {
+            print("put failed: " + message);
+            return;
+        }
+    }
+
+    match s3.get_text(cfg.clone(), "hello.txt") {
+        ok(text) => { print("get ok: " + text); }
+        err(message) => { print("get failed: " + message); }
+    }
+
+    match s3.presign_put(cfg, "upload/example.txt", 600) {
+        ok(url) => { print("presigned put: " + url); }
+        err(message) => { print("presign failed: " + message); }
+    }
+}

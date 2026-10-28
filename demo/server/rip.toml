@@ -1,0 +1,45 @@
+[module]
+name = "server"
+version = "0.1.0"
+entry = "main.rp"
+
+# 打包输出：目录与可执行文件名（不写时默认 dist/ 与 [module] name）。
+# 本 demo 是前后端分离的服务端项目，client 仅用于本地验证，不进入交付包。
+[build]
+dir = "dist"
+name = "server"
+# 随产物交付的运行期数据目录（相对项目根）：数据库文件与用户上传文件。
+# 工具链不预设目录名，运行期用到的数据目录在这里声明即可。
+copy = ["storage", "uploads"]
+
+[compile]
+# 不参与编译的目录：存放数据文件与本地上传，目录内的 .rp 不会被收集。
+exclude = ["storage", "uploads"]
+
+[dependencies]
+
+[rust-dependencies]
+
+# 运行时自身提示语言（启动日志、运行时错误、任务日志、std/log 标签）：
+# "english"（缺省）或 "chinese"。rip build 会把该配置写入产物。
+[runtime]
+log = "english"
+
+# HTTP 服务端并发与稳定性。下面都是缺省值，按机器规格调整即可。
+[server]
+workers = 8                   # 工作线程数；0 表示按 CPU 核数
+max_connections = 1024        # 连接队列上限，超出直接返回 503
+max_body_bytes = 8388608      # 请求体上限，超出返回 413
+read_timeout_ms = 30000
+write_timeout_ms = 30000
+keep_alive_ms = 5000
+max_requests = 1000
+health_path = "/healthz"
+ready_path = "/readyz"
+metrics_path = ""             # 需要 Prometheus 采集时改成 "/metrics"
+
+# 多实例部署：Redis 作为会话 / 缓存 / 分布式锁底座，并给定时任务选主。
+# 单机运行不需要，保持注释即可。
+# [cluster]
+# redis = "redis://127.0.0.1:6379/0"
+# task_lock = true

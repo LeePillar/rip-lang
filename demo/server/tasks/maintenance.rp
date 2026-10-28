@@ -1,0 +1,25 @@
+mod tasks;
+
+use std::db;
+use std::dev;
+use std::time;
+
+// 定时任务：每分钟清理过期会话。由 `#[interval(...)]` 在启动时自动调度，
+// 运行在独立线程、使用自己的数据库连接，不依赖 HTTP 请求。
+
+#[interval("1m")]
+func session_cleanup() -> void {
+    match db.open(config_dsn()) {
+        ok(conn) => {
+            match session_remove_expired(conn, time.timestamp_ms()) {
+                ok(count) => {
+                    if count > 0 {
+                        dev.log("session cleanup: removed " + count.to_string());
+                    }
+                }
+                err(message) => { dev.log("session cleanup failed: " + message); }
+            }
+        }
+        err(message) => { dev.log("session cleanup: cannot open database: " + message); }
+    }
+}

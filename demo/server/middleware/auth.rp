@@ -1,0 +1,34 @@
+mod middleware;
+
+use std::db;
+use std::http;
+use std::time;
+
+// 鉴权中间件：从 Authorization 头取 token，校验会话。
+
+func request_token(read req: http.request) -> string {
+    let raw: string = header_value(req, "Authorization");
+    if !raw.starts_with("Bearer ") {
+        return "";
+    }
+    match raw.slice(7, raw.len()) {
+        ok(token) => { return token.trim(); }
+        err(message) => { return ""; }
+    }
+}
+
+func api_guard(read conn: db.conn, read req: http.request) -> service_result {
+    let token: string = request_token(req);
+    if token.len() == 0 {
+        return svc_fail(401, "unauthorized");
+    }
+    match session_find_user(conn, token, time.timestamp_ms()) {
+        ok(row) => {
+            match row {
+                some(user) => { return svc_ok(user); }
+                none => { return svc_fail(401, "unauthorized"); }
+            }
+        }
+        err(message) => { return svc_fail(500, "database: " + message); }
+    }
+}

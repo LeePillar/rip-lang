@@ -1,0 +1,37 @@
+mod support;
+
+use std::crypto;
+
+// 密码哈希、token 生成、字段校验。
+
+// 密码使用 std/crypto 的 PBKDF2-HMAC-SHA256（ript$迭代次数$盐$摘要），不再自造弱哈希。
+func hash_password(password: string) -> string {
+    match crypto.password_hash(password) {
+        ok(hashed) => { return hashed; }
+        err(message) => { return ""; }
+    }
+}
+
+func verify_password(password: string, hashed: string) -> bool {
+    return crypto.password_verify(password, hashed);
+}
+
+func make_token(user_id: int, email: string, stamp: int) -> string {
+    let raw: string = "rip-session:" + email + ":" + user_id.to_string() + ":" + stamp.to_string();
+    match crypto.random_hex(16) {
+        ok(salt) => { return crypto.sha256(raw + ":" + salt); }
+        err(message) => { return crypto.sha256(raw); }
+    }
+}
+
+func valid_email(read email: string) -> bool {
+    return email.index_of("@").is_some();
+}
+
+func valid_role(read role: string) -> bool {
+    return role == "admin" || role == "user";
+}
+
+func valid_status(read status: string) -> bool {
+    return status == "active" || status == "disabled";
+}

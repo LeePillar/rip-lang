@@ -1,0 +1,7 @@
+[package]
+name = "rp-rust-interop"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rp-types = { path = "../rp-types" }

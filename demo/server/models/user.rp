@@ -1,0 +1,113 @@
+mod models;
+
+use std::db;
+
+// users 表：链式 ORM 为主，分页按方言拼接。
+
+func user_fields() -> string {
+    return "id, name, email, phone, role, status, created_at, updated_at";
+}
+
+func user_find(read conn: db.conn, id: int) -> result<option<map<string, any>>, string> {
+    return db.table(conn, "users")
+        .field(user_fields())
+        .where("id", "=", id)
+        .find();
+}
+
+func user_find_by_email(read conn: db.conn, read email: string) -> result<option<map<string, any>>, string> {
+    return db.table(conn, "users")
+        .field("id, email")
+        .where("email", "=", email)
+        .find();
+}
+
+func user_find_login(read conn: db.conn, read account: string) -> result<option<map<string, any>>, string> {
+    match db.table(conn, "users")
+        .field("id, name, email, phone, role, status, password, created_at, updated_at")
+        .where("email", "=", account)
+        .find()
+    {
+        ok(row) => {
+            match row {
+                some(user) => { return ok(some(user)); }
+                none => { }
+            }
+        }
+        err(message) => { return err(message); }
+    }
+    return db.table(conn, "users")
+        .field("id, name, email, phone, role, status, password, created_at, updated_at")
+        .where("name", "=", account)
+        .find();
+}
+
+func user_count(read conn: db.conn, read keyword: string, read status: string) -> result<int, string> {
+    let pattern: string = "%" + keyword + "%";
+    let mut filter: string = " WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ?)";
+    let mut params: vec<any> = [pattern, pattern, pattern];
+    if status.len() > 0 {
+        filter = filter + " AND status = ?";
+        params.push(status);
+    }
+
+    match conn.query_one("SELECT COUNT(*) AS total FROM users" + filter, params) {
+        ok(row) => {
+            match row {
+                some(counted) => {
+                    return ok(counted.get("total").unwrap_or(0).as_int().unwrap_or(0));
+                }
+                none => { return ok(0); }
+            }
+        }
+        err(message) => { return err(message); }
+    }
+}
+
+func user_page(
+    read conn: db.conn,
+    read keyword: string,
+    read status: string,
+    offset: int,
+    limit: int
+) -> result<vec<map<string, any>>, string> {
+    let pattern: string = "%" + keyword + "%";
+    let mut filter: string = " WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ?)";
+    let mut params: vec<any> = [pattern, pattern, pattern];
+    if status.len() > 0 {
+        filter = filter + " AND status = ?";
+        params.push(status);
+    }
+
+    let mut sql: string = "SELECT " + user_fields() + " FROM users" + filter;
+    if db.driver(conn) == "mssql" {
+        sql = sql + " ORDER BY id DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        params.push(offset);
+        params.push(limit);
+    } else {
+        sql = sql + " ORDER BY id DESC LIMIT ? OFFSET ?";
+        params.push(limit);
+        params.push(offset);
+    }
+    return conn.query(sql, params);
+}
+
+func user_store(read conn: db.conn, read values: map<string, any>) -> result<int, string> {
+    match db.table(conn, "users").insert(values) {
+        ok(count) => {
+            if count == 0 {
+                return err("insert failed");
+            }
+            return ok(conn.last_insert_id());
+        }
+        err(message) => { return err(message); }
+    }
+}
+
+func user_patch(read conn: db.conn, id: int, read changes: map<string, any>) -> result<int, string> {
+    return db.table(conn, "users").where("id", "=", id).update(changes);
+}
+
+func user_remove(read conn: db.conn, id: int) -> result<int, string> {
+    return db.table(conn, "users").where("id", "=", id).delete();
+}

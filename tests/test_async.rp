@@ -1,0 +1,52 @@
+mod tests;
+
+use std::dev;
+use std::time;
+
+type point = [x: int, y: int];
+
+async func sum_to(n: int) -> int {
+    let mut total: int = 0;
+    let mut i: int = 1;
+    while i <= n {
+        total = total + i;
+        i = i + 1;
+    }
+    return total;
+}
+
+async func make_point(x: int, y: int) -> point {
+    return point[x = x, y = y];
+}
+
+async func outer() -> int {
+    let inner: task<int> = sum_to(10);
+    return await inner + 1;
+}
+
+func main() -> void {
+    // 任务值可以保存，再按需等待。
+    let a: task<int> = sum_to(10);
+    let b: task<int> = sum_to(20);
+    dev.assert(await a == 55);
+    dev.assert(await b == 210);
+
+    // 结构体参数与返回值跨线程传递。
+    let p: task<point> = make_point(3, 4);
+    let q: point = await p;
+    dev.assert(q.x + q.y == 7);
+
+    // 嵌套 async。
+    let t: task<int> = outer();
+    dev.assert(await t == 56);
+
+    // 两个任务并行执行。
+    let start: int = time.timestamp_ms();
+    let s1: task<int> = sum_to(1000);
+    let s2: task<int> = sum_to(1000);
+    dev.assert(await s1 == 500500);
+    dev.assert(await s2 == 500500);
+    dev.assert(time.timestamp_ms() - start < 2000);
+
+    print("async tests ok");
+}

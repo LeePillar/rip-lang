@@ -1,0 +1,9 @@
+mod examples;
+
+use std::dev;
+
+func main() -> void {
+    let msg: string = "Hello, Rip!";
+    dev.log(msg);
+    print(msg);
+}

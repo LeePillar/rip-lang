@@ -1,0 +1,128 @@
+# 三平台流水线：Windows / Linux / macOS 各自构建工具链，
+# 并把示例程序用 `rip build --aot` 编译成该平台的原生二进制后上传。
+#
+# 说明：AOT 产物由 `rustc -O` 生成并静态链接 rp-runtime，
+# 因此只能在目标平台本机构建；本流水线就是“各平台各产出一份”。
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            ext: .exe
+            artifact: rip-windows-x64
+          - name: linux-x64
+            os: ubuntu-latest
+            ext: ""
+            artifact: rip-linux-x64
+          - name: macos-arm64
+            os: macos-latest
+            ext: ""
+            artifact: rip-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # tiberius 走 native-tls，Linux 需要 OpenSSL 头文件与 pkg-config。
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build toolchain
+        run: cargo build --release
+
+      - name: Unit tests
+        run: cargo test --release --workspace
+
+      - name: Rip static checks and language tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          RIP="./target/release/rip${{ matrix.ext }}"
+          "$RIP" --version
+          "$RIP" check examples/hello.rp
+          "$RIP" check examples/data_structures.rp
+          "$RIP" test examples/s3_demo
+
+      # 纯净宿主：关闭 interp feature 的 rp-core，AOT 产物不含解释器与 VM。
+      - name: Build interpreter-free host (rp-core)
+        run: cargo build --release -p rp-core --target-dir target/aot
+
+      - name: AOT smoke tests
+        shell: bash
+        env:
+          RIP_AOT_DEPS: target/aot/release/deps
+        run: |
+          set -euo pipefail
+          RIP="./target/release/rip${{ matrix.ext }}"
+          EXT="${{ matrix.ext }}"
+
+          "$RIP" build examples/hello.rp --aot
+          ./examples/dist/hello$EXT | grep -q "Hello, Rip!"
+
+          "$RIP" build examples/data_structures.rp --aot
+          ./examples/dist/data_structures$EXT | grep -q "scores.len = 2"
+
+          "$RIP" build bench/biz_cpu/main.rp --aot
+          ./bench/biz_cpu/dist/biz_cpu$EXT | grep -q "total 20225134963"
+
+          # 生成代码必须走 rp-core（纯净宿主），否则说明回退到了含解释器的 rp-runtime。
+          RIP_AOT_DEBUG=1 "$RIP" build examples/hello.rp --aot 2>&1 | grep -q "host   = rp_core"
+
+          # 交付目录里不得残留中间源码。
+          if ls examples/dist/*.rs >/dev/null 2>&1; then
+            echo "generated source must not be shipped in dist/"
+            exit 1
+          fi
+
+      # 阶段 C 验收：AOT 产物不得包含 Rip 源码、语言前端、解释器与字节码 VM。
+      - name: Verify AOT binary has no Rip source or language frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="./examples/dist/hello${{ matrix.ext }}"
+          for needle in "package examples" "func main" "rp_parser" "rp_lexer"; do
+            if grep -aq "$needle" "$BIN"; then
+              echo "unexpected '$needle' found in $BIN"
+              exit 1
+            fi
+          done
+          if grep -aqE 'rp-runtime[\\/]src[\\/]vm\.rs' "$BIN"; then
+            echo "unexpected bytecode VM symbols found in $BIN"
+            exit 1
+          fi
+          echo "ok: $BIN has no Rip source, parser/lexer, or bytecode VM"
+
+      - name: Report platform
+        shell: bash
+        run: |
+          uname -a || true
+          rustc -vV
+          ls -l "target/release/rip${{ matrix.ext }}"
+          ls -l "examples/dist/hello${{ matrix.ext }}"
+
+      - name: Upload native binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: error
+          path: |
+            target/release/rip${{ matrix.ext }}
+            examples/dist/hello${{ matrix.ext }}
+            examples/dist/data_structures${{ matrix.ext }}
+            bench/biz_cpu/dist/biz_cpu${{ matrix.ext }}

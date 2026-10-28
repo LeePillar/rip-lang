@@ -1,0 +1,80 @@
+mod tests;
+
+use std::cache;
+use std::dev;
+
+func classify(score: int) -> string {
+    if score >= 90 {
+        return "A";
+    } else if score >= 80 {
+        return "B";
+    }
+    return "C";
+}
+
+func parse_number(text: string) -> result<int, string> {
+    return text.to_int();
+}
+
+func add_parsed(text: string) -> result<int, string> {
+    let n: int = parse_number(text)?;
+    return ok(n + 1);
+}
+
+func main() -> void {
+    dev.assert(classify(95) == "A");
+    dev.assert(classify(85) == "B");
+    dev.assert(classify(10) == "C");
+
+    let mut total: int = 0;
+    let mut i: int = 0;
+    while i < 5 {
+        if i == 1 {
+            i = i + 1;
+            continue;
+        }
+        if i == 4 { break; }
+        total = total + i;
+        i = i + 1;
+    }
+    dev.assert(total == 0 + 2 + 3);
+
+    let mut counted: int = 0;
+    loop {
+        if counted >= 3 { break; }
+        counted = counted + 1;
+    }
+    dev.assert(counted == 3);
+
+    cache.set("control", "v", 60);
+    let mut seen: int = 0;
+    while let some(value) = cache.get("control") => {
+        seen = seen + 1;
+        dev.assert(value == "v");
+        cache.delete("control");
+    }
+    dev.assert(seen == 1);
+
+    let tags: vec<string> = ["a", "b", "c"];
+    let mut joined: string = "";
+    for t in tags {
+        joined = joined + t;
+    }
+    dev.assert(joined == "abc");
+
+    let opt: option<int> = some(42);
+    match opt {
+        some(v) => { dev.assert(v == 42); }
+        none => { dev.assert(false); }
+    }
+
+    match add_parsed("9") {
+        ok(v) => { dev.assert(v == 10); }
+        err(e) => { dev.assert(false); }
+    }
+
+    match add_parsed("x") {
+        ok(v) => { dev.assert(false); }
+        err(e) => { dev.assert(e.len() > 0); }
+    }
+}

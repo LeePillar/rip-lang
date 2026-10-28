@@ -1,0 +1,15 @@
+mod server;
+
+use std::http;
+
+// 显式路由表：只为静态资源保留。
+//
+// API 路由用控制器函数上的 `#[get("/path")]` 注解声明，http.router 会自动注册，
+// 不需要在这里再写一遍。注解路由先注册，这里的显式路由后注册，
+// 所以 http.static 的 `/*` 通配不会盖住 API。
+
+func build_routes() -> vec<http.route> {
+    return [
+        http.static("/", config_static_root())
+    ];
+}

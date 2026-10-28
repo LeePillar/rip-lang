@@ -1,0 +1,32 @@
+mod examples;
+
+use std::dev;
+
+type user = [id: int, name: string];
+
+func greet(read u: user) -> string {
+    return "Hi " + u.name;
+}
+
+func rename(write u: user, n: string) -> void {
+    u.name = n;
+}
+
+func consume(u: user) -> int {
+    return u.id;
+}
+
+func main() -> void {
+    let mut u: user = [id = 1, name = "张三"];
+
+    let msg: string = greet(u);
+    dev.log(msg);
+
+    rename(u, "李四");
+    dev.log("renamed: " + u.name);
+
+    let id: int = consume(u);
+    dev.log("id = " + id.to_string());
+
+    // dev.log(u.name);   // 编译报错：use after move
+}

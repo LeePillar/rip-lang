@@ -1,0 +1,65 @@
+mod examples;
+
+// 泛型验证：类型参数、显式类型实参、接口约束（体内可调用方法）。
+
+use std::dev;
+
+type shape = interface {
+    func area() -> float
+}
+
+type circle = [radius: float];
+type square = [side: float];
+
+func circle.area(read c: circle) -> float {
+    return 3.0 * c.radius * c.radius;
+}
+
+func square.area(read s: square) -> float {
+    return s.side * s.side;
+}
+
+func identity<T>(x: T) -> T {
+    return x;
+}
+
+func first<T>(read items: vec<T>) -> option<T> {
+    match items.at(0) {
+        ok(v) => { return some(v); }
+        err(e) => { return none; }
+    }
+}
+
+func total_area<S: shape>(read items: vec<S>) -> float {
+    let mut sum: float = 0.0;
+    for item in items {
+        sum = sum + item.area();
+    }
+    return sum;
+}
+
+func main() -> void {
+    let n: int = identity(42);
+    dev.assert(n == 42);
+
+    // 返回类型推断不出时用显式类型实参
+    let text: string = identity<string>("hi");
+    dev.assert(text == "hi");
+
+    let circles: vec<circle> = [circle[radius = 1.0], circle[radius = 2.0]];
+    dev.assert(total_area(circles) == 15.0);
+
+    let squares: vec<square> = [square[side = 2.0]];
+    dev.assert(total_area(squares) == 4.0);
+
+    // 显式类型实参 + 约束
+    dev.assert(total_area<circle>(circles) == 15.0);
+
+    let head: option<int> = first<int>([1, 2, 3]);
+    match head {
+        some(v) => { dev.assert(v == 1); }
+        none => { dev.assert(false); }
+    }
+
+    dev.log("generics ok");
+}

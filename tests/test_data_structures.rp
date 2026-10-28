@@ -1,0 +1,32 @@
+mod tests;
+
+use std::dev;
+
+func main() -> void {
+    let mut nums: vec<int> = [1, 4, 3];
+    nums.sort(func(a: int, b: int) -> int { return a - b; });
+    nums.push(5);
+    dev.assert(nums.len() == 4);
+    dev.assert(nums.0 == 1);
+    dev.assert(nums.at(1).unwrap_or(0) == 3);
+
+    let pair: vec<string, int> = ["a", 1];
+    dev.assert(pair.0 == "a");
+    dev.assert(pair.1 == 1);
+
+    let mixed: vec = [:int = 1, :string = "a", :bool = true];
+    dev.assert(mixed.len() == 3);
+
+    let mut xs: vec<int> = [1, 2, 3];
+    xs.reverse();
+    dev.assert(xs.0 == 3);
+
+    let mut scores: map<string, int> = [];
+    scores.set("张三", 90);
+    scores.set("李四", 85);
+    dev.assert(scores.len() == 2);
+    dev.assert(scores.get("张三").unwrap_or(0) == 90);
+    dev.assert(scores.has("李四"));
+    scores.delete("李四");
+    dev.assert(scores.len() == 1);
+}

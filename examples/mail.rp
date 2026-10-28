@@ -1,0 +1,54 @@
+mod examples;
+
+// 邮件：用 mail.config() 取默认值再逐字段覆盖，附件来自 base64 或文件。
+// 示例默认不联网；设置 RIP_MAIL_DEMO=1 才会真的发信。
+
+use std::dev;
+use std::mail;
+use std::sys;
+
+func main() -> void {
+    let mut cfg: mail.config = mail.config();
+    cfg.host = "smtp.example.com";
+    cfg.port = 587;
+    cfg.tls = "starttls";
+    cfg.username = "bot@example.com";
+    cfg.password = "secret";
+    cfg.from = "bot@example.com";
+    cfg.from_name = "Rip Bot";
+    cfg.to = ["ops@example.com"];
+    cfg.subject = "Rip 邮件示例";
+    cfg.text = "纯文本正文";
+    cfg.html = "<p>HTML 正文</p>";
+
+    let mut report: mail.attachment = mail.attachment();
+    report.filename = "report.txt";
+    report.content_base64 = "aGVsbG8=";
+    report.content_type = "text/plain";
+    cfg.attachments = [report];
+
+    dev.assert(cfg.host == "smtp.example.com");
+    dev.assert(cfg.to.len() == 1);
+    dev.assert(cfg.attachments.len() == 1);
+
+    let mut enabled: bool = false;
+    match sys.env_get("RIP_MAIL_DEMO") {
+        some(flag) => { enabled = flag == "1"; }
+        none => {}
+    }
+    if enabled {
+        match mail.send(cfg) {
+            ok(_) => { dev.log("sent"); }
+            err(message) => { dev.log(message); }
+        }
+    }
+
+    // 离线校验：没有收件人时直接返回 err，不建立连接。
+    cfg.to = [];
+    match mail.send(cfg) {
+        ok(_) => { dev.assert(false); }
+        err(message) => { dev.assert(message.contains("recipient")); }
+    }
+
+    dev.log("mail ok");
+}

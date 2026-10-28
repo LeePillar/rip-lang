@@ -1,0 +1,300 @@
+mod s3;
+
+// S3 兼容对象存储（AWS Signature V4），纯 Rip 实现。
+// 只依赖标准库的 HTTP / 哈希 / 时间 / 编码能力，运行时不含任何 S3 逻辑。
+//
+// 适用：AWS S3、MinIO、Cloudflare R2、Backblaze B2 等 S3 兼容服务。
+// OSS / COS 若提供 S3 兼容端点，填对应 endpoint 即可；否则按各自文档签名。
+
+use std::http;
+use std::crypto;
+use std::time;
+use std::encode;
+
+type oss_config = [
+    endpoint: string,
+    region: string,
+    bucket: string,
+    access_key: string,
+    secret_key: string
+];
+
+/// 空请求体的 SHA-256；返回新字符串，避免常量被移动。
+self func empty_sha256() -> string {
+    return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+}
+
+pub func new_config(
+    endpoint: string,
+    region: string,
+    bucket: string,
+    access_key: string,
+    secret_key: string
+) -> oss_config {
+    return [
+        endpoint = endpoint,
+        region = region,
+        bucket = bucket,
+        access_key = access_key,
+        secret_key = secret_key
+    ];
+}
+
+/// 从 endpoint 去掉协议与路径，得到签名用的 Host。
+self func host_of(endpoint: string) -> string {
+    let stripped: string = endpoint.replace("https://", "").replace("http://", "");
+    let slash: option<int> = stripped.index_of("/");
+    match slash {
+        some(position) => {
+            return stripped.slice(0, position).unwrap_or(stripped.clone());
+        }
+        none => { }
+    }
+    return stripped;
+}
+
+/// 对象路径：`/bucket/key`，每一段按 RFC3986 编码（`/` 保留为分隔符）。
+pub func canonical_object_path(bucket: string, key: string) -> string {
+    let mut path: string = "/" + encode.url_encode(bucket);
+    for segment in key.split("/") {
+        path = path + "/" + encode.url_encode(segment);
+    }
+    return path;
+}
+
+self func join_url(endpoint: string, path: string) -> string {
+    let mut base: string = endpoint;
+    if base.ends_with("/") {
+        base = base.slice(0, base.len() - 1).unwrap_or(base.clone());
+    }
+    return base + path;
+}
+
+/// SigV4 派生密钥链并计算签名（十六进制）。
+pub func signature(
+    access_key: string,
+    secret_key: string,
+    region: string,
+    date: string,
+    amz_date: string,
+    canonical_request: string
+) -> string {
+    let scope: string = date + "/" + region + "/s3/aws4_request";
+    let string_to_sign: string = "AWS4-HMAC-SHA256\n" + amz_date + "\n" + scope + "\n" + crypto.sha256(canonical_request);
+    let key_date: string = crypto.hmac_sha256_hex(crypto.hex_encode("AWS4" + secret_key), date).unwrap_or("");
+    let key_region: string = crypto.hmac_sha256_hex(key_date, region).unwrap_or("");
+    let key_service: string = crypto.hmac_sha256_hex(key_region, "s3").unwrap_or("");
+    let key_signing: string = crypto.hmac_sha256_hex(key_service, "aws4_request").unwrap_or("");
+    return crypto.hmac_sha256_hex(key_signing, string_to_sign).unwrap_or("");
+}
+
+/// 生成 Authorization 头。`canonical_headers` 必须已按名称排序且以换行结尾。
+pub func authorization(
+    cfg: oss_config,
+    method: string,
+    canonical_uri: string,
+    canonical_query: string,
+    canonical_headers: string,
+    signed_headers: string,
+    payload_hash: string,
+    amz_date: string
+) -> string {
+    let date: string = amz_date.slice(0, 8).unwrap_or("");
+    let canonical_request: string = method + "\n" + canonical_uri + "\n" + canonical_query + "\n"
+        + canonical_headers + "\n" + signed_headers + "\n" + payload_hash;
+    let digest: string = signature(
+        cfg.access_key.clone(),
+        cfg.secret_key.clone(),
+        cfg.region.clone(),
+        date.clone(),
+        amz_date,
+        canonical_request
+    );
+    let scope: string = date + "/" + cfg.region + "/s3/aws4_request";
+    return "AWS4-HMAC-SHA256 Credential=" + cfg.access_key.clone() + "/" + scope
+        + ", SignedHeaders=" + signed_headers + ", Signature=" + digest;
+}
+
+/// 上传字符串。返回 ok(true) 表示 2xx。
+pub func put_text(cfg: oss_config, key: string, text: string, content_type: string) -> result<bool, string> {
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let payload_hash: string = crypto.sha256(text.clone());
+    let canonical_headers: string = "content-type:" + content_type.clone() + "\n"
+        + "host:" + host + "\n"
+        + "x-amz-content-sha256:" + payload_hash.clone() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "content-type;host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "PUT", path.clone(), "", canonical_headers, signed_headers,
+        payload_hash.clone(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", payload_hash);
+    headers.set("x-amz-date", amz_date);
+    headers.set("Content-Type", content_type);
+    match http.fetch("PUT", join_url(cfg.endpoint.clone(), path), headers, text) {
+        ok(response) => { return ok(response.status >= 200 && response.status < 300); }
+        err(message) => { return err(message); }
+    }
+}
+
+/// 上传文件（二进制安全），返回 ok(true) 表示 2xx。
+pub func put_file(cfg: oss_config, key: string, path: string, content_type: string) -> result<bool, string> {
+    let hash: result<string, string> = crypto.sha256_file(path.clone());
+    let mut payload_hash: string = "";
+    match hash {
+        ok(value) => { payload_hash = value; }
+        err(message) => { return err("cannot hash file: " + message); }
+    }
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let object_path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let canonical_headers: string = "content-type:" + content_type.clone() + "\n"
+        + "host:" + host + "\n"
+        + "x-amz-content-sha256:" + payload_hash.clone() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "content-type;host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "PUT", object_path.clone(), "", canonical_headers, signed_headers,
+        payload_hash.clone(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", payload_hash);
+    headers.set("x-amz-date", amz_date);
+    headers.set("Content-Type", content_type);
+    match http.fetch_file("PUT", join_url(cfg.endpoint.clone(), object_path), headers, path) {
+        ok(response) => { return ok(response.status >= 200 && response.status < 300); }
+        err(message) => { return err(message); }
+    }
+}
+
+/// 读取文本对象。
+pub func get_text(cfg: oss_config, key: string) -> result<string, string> {
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let canonical_headers: string = "host:" + host + "\n"
+        + "x-amz-content-sha256:" + empty_sha256() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "GET", path.clone(), "", canonical_headers, signed_headers,
+        empty_sha256(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", empty_sha256());
+    headers.set("x-amz-date", amz_date);
+    match http.fetch("GET", join_url(cfg.endpoint.clone(), path), headers, "") {
+        ok(response) => {
+            if response.status >= 200 && response.status < 300 {
+                return ok(response.body.clone());
+            }
+            return err("get failed with status " + response.status.to_string());
+        }
+        err(message) => { return err(message); }
+    }
+}
+
+/// 下载对象到文件，返回字节数。
+pub func get_file(cfg: oss_config, key: string, path: string) -> result<int, string> {
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let object_path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let canonical_headers: string = "host:" + host + "\n"
+        + "x-amz-content-sha256:" + empty_sha256() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "GET", object_path.clone(), "", canonical_headers, signed_headers,
+        empty_sha256(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", empty_sha256());
+    headers.set("x-amz-date", amz_date);
+    return http.download(join_url(cfg.endpoint.clone(), object_path), headers, path);
+}
+
+/// 删除对象。
+pub func delete_object(cfg: oss_config, key: string) -> result<bool, string> {
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let canonical_headers: string = "host:" + host + "\n"
+        + "x-amz-content-sha256:" + empty_sha256() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "DELETE", path.clone(), "", canonical_headers, signed_headers,
+        empty_sha256(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", empty_sha256());
+    headers.set("x-amz-date", amz_date);
+    match http.fetch("DELETE", join_url(cfg.endpoint.clone(), path), headers, "") {
+        ok(response) => { return ok(response.status >= 200 && response.status < 300); }
+        err(message) => { return err(message); }
+    }
+}
+
+/// 判断对象是否存在（HEAD）。
+pub func object_exists(cfg: oss_config, key: string) -> result<bool, string> {
+    let amz_date: string = time.format_utc(time.timestamp_ms(), "%Y%m%dT%H%M%SZ");
+    let host: string = host_of(cfg.endpoint.clone());
+    let path: string = canonical_object_path(cfg.bucket.clone(), key.clone());
+    let canonical_headers: string = "host:" + host + "\n"
+        + "x-amz-content-sha256:" + empty_sha256() + "\n"
+        + "x-amz-date:" + amz_date.clone() + "\n";
+    let signed_headers: string = "host;x-amz-content-sha256;x-amz-date";
+    let auth: string = authorization(
+        cfg.clone(), "HEAD", path.clone(), "", canonical_headers, signed_headers,
+        empty_sha256(), amz_date.clone()
+    );
+    let mut headers: map<string, string> = [];
+    headers.set("Authorization", auth);
+    headers.set("x-amz-content-sha256", empty_sha256());
+    headers.set("x-amz-date", amz_date);
+    match http.fetch("HEAD", join_url(cfg.endpoint.clone(), path), headers, "") {
+        ok(response) => { return ok(response.status >= 200 && response.status < 300); }
+        err(message) => { return err(message); }
+    }
+}
+
+/// 生成预签名 GET URL，浏览器可直接下载，不需要暴露密钥。
+pub func presign_get(cfg: oss_config, key: string, expires: int) -> result<string, string> {
+    return presign(cfg, "GET", key, expires);
+}
+
+/// 生成预签名 PUT URL，浏览器可直接上传。
+pub func presign_put(cfg: oss_config, key: string, expires: int) -> result<string, string> {
+    return presign(cfg, "PUT", key, expires);
+}
+
+self func presign(cfg: oss_config, method: string, key: string, expires: int) -> result<string, string> {
+    let now: int = time.timestamp_ms();
+    let amz_date: string = time.format_utc(now, "%Y%m%dT%H%M%SZ");
+    let date: string = time.format_utc(now, "%Y%m%d");
+    let scope: string = date + "/" + cfg.region.clone() + "/s3/aws4_request";
+    let credential: string = cfg.access_key.clone() + "/" + scope;
+    let query: string = "X-Amz-Algorithm=AWS4-HMAC-SHA256"
+        + "&X-Amz-Credential=" + encode.url_encode(credential)
+        + "&X-Amz-Date=" + amz_date.clone()
+        + "&X-Amz-Expires=" + expires.to_string()
+        + "&X-Amz-SignedHeaders=host";
+    let host: string = host_of(cfg.endpoint.clone());
+    let canonical_headers: string = "host:" + host + "\n";
+    let path: string = canonical_object_path(cfg.bucket.clone(), key);
+    let canonical_request: string = method + "\n" + path.clone() + "\n" + query.clone() + "\n"
+        + canonical_headers + "\n" + "host" + "\n" + "UNSIGNED-PAYLOAD";
+    let digest: string = signature(
+        cfg.access_key.clone(), cfg.secret_key.clone(), cfg.region.clone(),
+        date, amz_date, canonical_request
+    );
+    return ok(join_url(cfg.endpoint.clone(), path) + "?" + query + "&X-Amz-Signature=" + digest);
+}

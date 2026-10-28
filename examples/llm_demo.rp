@@ -1,0 +1,29 @@
+mod examples;
+
+use std::llm;
+use std::dev;
+use std::sys as sys;
+
+func main() -> void {
+    let client: llm.client = llm.new_client([
+        provider = "openai",
+        base_url = "https://api.openai.com/v1",
+        api_key = sys.env_get("OPENAI_KEY").unwrap_or(""),
+        timeout_ms = 60000
+    ]);
+
+    let msgs: vec<llm.message> = [
+        [role = "user", content = "用一句话介绍 Rip"]
+    ];
+    let resp: result<llm.response, string> = client.chat(msgs, [
+        model = "gpt-4o-mini",
+        temperature = 0.7,
+        max_tokens = 256,
+        top_p = 1.0,
+        stream = false
+    ]);
+    match resp {
+        ok(r) => { dev.log(r.content); }
+        err(e) => { dev.log("err: " + e); }
+    }
+}

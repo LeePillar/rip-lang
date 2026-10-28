@@ -1,0 +1,47 @@
+mod support;
+
+use std::http;
+
+// 请求体 / 查询参数 / 路径参数的读取工具。
+
+func body_map(read req: http.request) -> map<string, any> {
+    let payload: option<any> = req.json.clone();
+    match payload {
+        some(value) => {
+            match value.as_map() {
+                some(body) => { return body; }
+                none => { }
+            }
+        }
+        none => { }
+    }
+    return [];
+}
+
+func field_string(read body: map<string, any>, key: string) -> string {
+    return body.get(key).unwrap_or("").as_string().unwrap_or("");
+}
+
+func query_text(read req: http.request, key: string) -> string {
+    return req.query.get(key).unwrap_or("").trim();
+}
+
+func query_int(read req: http.request, key: string, fallback: int) -> int {
+    let text: string = req.query.get(key).unwrap_or("");
+    if text.len() == 0 {
+        return fallback;
+    }
+    return text.to_int().unwrap_or(fallback);
+}
+
+func path_int(read req: http.request, key: string) -> int {
+    return req.params.get(key).unwrap_or("0").to_int().unwrap_or(0);
+}
+
+func header_value(read req: http.request, name: string) -> string {
+    let direct: string = req.headers.get(name).unwrap_or("");
+    if direct.len() > 0 {
+        return direct;
+    }
+    return req.headers.get(name.to_lower()).unwrap_or("");
+}

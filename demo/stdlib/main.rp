@@ -1,0 +1,163 @@
+mod stdlib;
+
+use std::dev;
+use std::encode;
+use std::xml;
+use std::crypto;
+use std::net;
+use std::ws;
+use std::task;
+
+// 系统包自检：rip run demo/stdlib/main.rp
+func main() -> void {
+    check_encode();
+    check_xml();
+    check_crypto();
+    check_tcp();
+    check_udp();
+    check_ws();
+    dev.log("all std/* package checks passed");
+}
+
+func check_encode() -> void {
+    dev.assert(encode.url_encode("a b&c/中文") == "a%20b%26c%2F%E4%B8%AD%E6%96%87");
+    match encode.url_decode("a%20b") {
+        ok(value) => { dev.assert(value == "a b"); }
+        err(message) => { dev.assert(false); }
+    }
+    dev.assert(encode.html_escape("<b>") == "&lt;b&gt;");
+    let csv: string = encode.csv_encode([["name", "note"], ["Li Si", "a,b"]]);
+    dev.assert(csv == "name,note\r\nLi Si,\"a,b\"");
+    dev.assert(encode.csv_parse(csv).len() == 2);
+    let query: map<string, string> = encode.query_parse("page=2&q=rip");
+    dev.assert(encode.query_stringify(query) == "page=2&q=rip");
+}
+
+func check_xml() -> void {
+    match xml.parse("<root id=\"1\"><item>hello &amp; hi</item><item>world</item></root>") {
+        ok(root) => {
+            dev.assert(xml.name(root) == "root");
+            dev.assert(xml.attrs(root).get("id").unwrap_or("") == "1");
+            dev.assert(xml.find_all(root, "item").len() == 2);
+            match xml.find(root, "item") {
+                some(item) => { dev.assert(xml.text(item) == "hello & hi"); }
+                none => { dev.assert(false); }
+            }
+            dev.assert(xml.stringify(root).contains("<item>world</item>"));
+        }
+        err(message) => { dev.assert(false); }
+    }
+    match xml.parse("<a><b></a>") {
+        ok(node) => { dev.assert(false); }
+        err(message) => { dev.assert(true); }
+    }
+}
+
+func check_crypto() -> void {
+    dev.assert(crypto.sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d");
+    dev.assert(crypto.sha256("abc").len() == 64);
+    dev.assert(crypto.password_verify("secret", crypto.password_hash("secret").unwrap_or("")));
+    match crypto.aes_encrypt("secret text", "pass phrase") {
+        ok(cipher) => {
+            match crypto.aes_decrypt(cipher, "pass phrase") {
+                ok(plain) => { dev.assert(plain == "secret text"); }
+                err(message) => { dev.assert(false); }
+            }
+            match crypto.aes_decrypt(cipher, "wrong key") {
+                ok(plain) => { dev.assert(false); }
+                err(message) => { dev.assert(true); }
+            }
+        }
+        err(message) => { dev.assert(false); }
+    }
+    match crypto.rsa_generate(1024) {
+        ok(pair) => {
+            let private: string = pair.get("private_key_pem").unwrap_or("");
+            let public: string = pair.get("public_key_pem").unwrap_or("");
+            match crypto.rsa_sign("payload", private) {
+                ok(signature) => {
+                    dev.assert(crypto.rsa_verify("payload", signature, public));
+                    dev.assert(!crypto.rsa_verify("tampered", signature, public));
+                }
+                err(message) => { dev.assert(false); }
+            }
+        }
+        err(message) => { dev.assert(false); }
+    }
+}
+
+func tcp_echo() -> void {
+    match net.tcp_listen("127.0.0.1", 19130) {
+        ok(listener) => {
+            match net.tcp_accept(listener, 5000) {
+                ok(conn) => {
+                    match net.tcp_recv_line(conn, 4096, 5000) {
+                        ok(line) => { net.tcp_send(conn, "echo:" + line + "\n"); }
+                        err(message) => { }
+                    }
+                    net.tcp_close(conn);
+                }
+                err(message) => { }
+            }
+            net.tcp_listener_close(listener);
+        }
+        err(message) => { }
+    }
+}
+
+func check_tcp() -> void {
+    task.spawn("tcp_echo");
+    task.sleep(200);
+    match net.tcp_connect("127.0.0.1", 19130, 3000) {
+        ok(conn) => {
+            dev.assert(net.tcp_send(conn, "ping\n").is_ok());
+            match net.tcp_recv_line(conn, 4096, 3000) {
+                ok(line) => { dev.assert(line == "echo:ping"); }
+                err(message) => { dev.assert(false); }
+            }
+            net.tcp_close(conn);
+        }
+        err(message) => { dev.assert(false); }
+    }
+}
+
+func check_udp() -> void {
+    match net.udp_bind("127.0.0.1", 19131) {
+        ok(socket) => {
+            net.udp_send(socket, "127.0.0.1", 19131, "datagram");
+            match net.udp_recv(socket, 1024, 3000) {
+                ok(packet) => { dev.assert(packet.data == "datagram"); }
+                err(message) => { dev.assert(false); }
+            }
+            net.udp_close(socket);
+        }
+        err(message) => { dev.assert(false); }
+    }
+}
+
+func ws_echo_server() -> void {
+    ws.serve(19132, ws_on_client);
+}
+
+func ws_on_client(read conn: ws.conn) -> void {
+    match ws.recv(conn, 5000) {
+        ok(text) => { ws.send(conn, "ws:" + text); }
+        err(message) => { }
+    }
+}
+
+func check_ws() -> void {
+    task.spawn("ws_echo_server");
+    task.sleep(300);
+    match ws.connect("ws://127.0.0.1:19132/chat", 3000) {
+        ok(conn) => {
+            ws.send(conn, "hello");
+            match ws.recv(conn, 3000) {
+                ok(text) => { dev.assert(text == "ws:hello"); }
+                err(message) => { dev.assert(false); }
+            }
+            ws.close(conn);
+        }
+        err(message) => { dev.assert(false); }
+    }
+}

@@ -1,0 +1,53 @@
+mod examples;
+
+use std::cache;
+use std::dev;
+
+func main() -> void {
+    let score: int = 85;
+    if score >= 90 {
+        dev.log("A");
+    } else if score >= 80 {
+        dev.log("B");
+    } else {
+        dev.log("C");
+    }
+
+    let mut i: int = 0;
+    while i < 3 {
+        dev.log("while i = " + i.to_string());
+        i = i + 1;
+    }
+
+    let mut j: int = 0;
+    loop {
+        if j >= 3 { break; }
+        dev.log("loop j = " + j.to_string());
+        j = j + 1;
+    }
+
+    let tags: vec<string> = ["a", "b", "c"];
+    for t in tags {
+        dev.log("tag = " + t);
+    }
+
+    cache.set("greeting", "hi", 60);
+    while let some(value) = cache.get("greeting") => {
+        dev.log("while let value = " + value);
+        cache.delete("greeting");
+    }
+
+    let mut k: int = 0;
+    while k < 10 {
+        k = k + 1;
+        if k == 2 { continue; }
+        if k == 5 { break; }
+        dev.log("k = " + k.to_string());
+    }
+
+    let opt: option<int> = some(42);
+    match opt {
+        some(v) => { dev.log("some: " + v.to_string()); }
+        none => { dev.log("none"); }
+    }
+}
