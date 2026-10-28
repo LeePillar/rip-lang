@@ -54,7 +54,7 @@ Only two delivery forms are exposed to users:
 
 The Windows x64 runtime ships as a self-contained package: compiler, linker and AOT runtime libraries are bundled, so **no** Rust / cargo / build tools are required:
 
-1. Download and extract `rip-0.1.0-windows-x64.zip`
+1. Download `rip-0.1.0-windows-x64.zip` from [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.0) and extract it
 2. Run `install.cmd` inside the extracted folder — it appends that folder to the **current user PATH** (no administrator rights needed)
 3. Open a new terminal and run `rip doctor`
 
