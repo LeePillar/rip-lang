@@ -54,7 +54,7 @@ Rip 的核心原则是**唯一写法**：同一语义只允许一种语法，不
 
 Windows x64 运行时已打包为自包含安装包，内置编译器、链接器与 AOT 运行时库，机器上**不需要**安装 Rust / cargo / 任何编译工具：
 
-1. 下载并解压 `rip-0.1.0-windows-x64.zip`
+1. 从 [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.0) 下载 `rip-0.1.0-windows-x64.zip` 并解压
 2. 双击解压目录内的 `install.cmd`，脚本会把该目录写入**当前用户 PATH**（无需管理员权限）
 3. 新开一个终端，执行 `rip doctor` 自检
 
