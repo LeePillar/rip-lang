@@ -1,4 +1,4 @@
-﻿﻿//! Rip 树遍历解释器。
+//! Rip 树遍历解释器。
 
 use std::collections::HashMap;
 use std::rc::Rc;

@@ -1,4 +1,4 @@
-﻿//! 事件驱动 HTTP 服务端（明文 HTTP），thread-per-core 架构。
+//! 事件驱动 HTTP 服务端（明文 HTTP），thread-per-core 架构。
 //!
 //! 每条 worker 线程自建一个 current_thread tokio runtime + LocalSet：
 //! acceptor（主线程）把连接分配到负载最低的 worker，此后该连接的

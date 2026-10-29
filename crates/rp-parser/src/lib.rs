@@ -1,4 +1,4 @@
-﻿//! Rip 递归下降解析器。
+//! Rip 递归下降解析器。
 
 use rp_ast::*;
 use rp_lexer::{lex, Keyword, LexError, Token, TokenKind};

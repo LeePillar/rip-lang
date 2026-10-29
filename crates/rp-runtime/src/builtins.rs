@@ -1,4 +1,4 @@
-﻿﻿//! 标准库与 Rust 包内置函数。
+//! 标准库与 Rust 包内置函数。
 
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
