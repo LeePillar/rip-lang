@@ -1,0 +1,159 @@
+{
+  "func": {
+    "prefix": "func",
+    "body": [
+      "func ${1:name}(${2:arg}: ${3:int}) -> ${4:void} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "定义函数（必须写参数类型与返回类型）"
+  },
+  "main": {
+    "prefix": "main",
+    "body": [
+      "mod ${1:app};",
+      "",
+      "func main() -> void {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "程序入口（首行 mod 必须等于目录名）"
+  },
+  "type": {
+    "prefix": "type",
+    "body": [
+      "type ${1:name} = [${2:field}: ${3:string}];"
+    ],
+    "description": "命名类型（type / struct / obj 等价）"
+  },
+  "interface": {
+    "prefix": "interface",
+    "body": [
+      "type ${1:name} = interface {",
+      "    func ${2:method}() -> ${3:void}",
+      "}"
+    ],
+    "description": "接口声明（隐式实现）"
+  },
+  "enum": {
+    "prefix": "enum",
+    "body": [
+      "type ${1:name} = enum {",
+      "    ${2:variant},",
+      "}"
+    ],
+    "description": "枚举（ADT）声明"
+  },
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "条件判断"
+  },
+  "for": {
+    "prefix": "for",
+    "body": [
+      "for ${1:item} in ${2:items} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "遍历 vec / map"
+  },
+  "while": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "while 循环"
+  },
+  "match-option": {
+    "prefix": "matchopt",
+    "body": [
+      "match ${1:value} {",
+      "    some(${2:v}) => { ${3} }",
+      "    none => { ${0} }",
+      "}"
+    ],
+    "description": "匹配 option（必须穷尽）"
+  },
+  "match-result": {
+    "prefix": "matchres",
+    "body": [
+      "match ${1:value} {",
+      "    ok(${2:v}) => { ${3} }",
+      "    err(${4:e}) => { ${0} }",
+      "}"
+    ],
+    "description": "匹配 result（必须穷尽）"
+  },
+  "route-get": {
+    "prefix": "get",
+    "body": [
+      "#[get(\"${1:/path}\")]",
+      "func ${2:handler}(read req: http.request) -> http.response {",
+      "    return http.response[status = 200, json = ${3:[message = \"ok\"]}];",
+      "}"
+    ],
+    "description": "GET 路由处理器"
+  },
+  "http-serve": {
+    "prefix": "serve",
+    "body": [
+      "func main() -> void {",
+      "    let extra: vec<http.route> = [${1:}];",
+      "    http.serve(${2:8080}, http.router(extra));",
+      "}"
+    ],
+    "description": "启动 HTTP 服务（注解路由自动注册）"
+  },
+  "test": {
+    "prefix": "#test",
+    "body": [
+      "#[test]",
+      "func ${1:test_name}() -> void {",
+      "    dev.assert(${2:true});",
+      "}"
+    ],
+    "description": "测试函数（无入参、返回 void）"
+  },
+  "interval": {
+    "prefix": "#interval",
+    "body": [
+      "#[interval(\"${1:5m}\")]",
+      "func ${2:task}() -> void {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "定时任务（ms / s / m / h / d）"
+  },
+  "async-func": {
+    "prefix": "async",
+    "body": [
+      "async func ${1:name}(${2:arg}: ${3:int}) -> ${4:void} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "异步任务函数（调用返回 task<T>）"
+  },
+  "defer": {
+    "prefix": "defer",
+    "body": [
+      "defer ${1:resource}.close();"
+    ],
+    "description": "函数退出时执行清理调用"
+  },
+  "method": {
+    "prefix": "method",
+    "body": [
+      "func ${1:type}.${2:method}(read ${3:receiver}: ${1:type}) -> ${4:void} {",
+      "    ${0}",
+      "}"
+    ],
+    "description": "为类型定义方法"
+  }
+}

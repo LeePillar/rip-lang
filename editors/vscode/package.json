@@ -1,19 +1,38 @@
 {
   "name": "rip-lang",
   "displayName": "Rip",
-  "description": "Rip language support: syntax highlighting, LSP diagnostics/completion, DAP debugging.",
+  "description": "Rip language support: syntax highlighting, LSP diagnostics/completion/hover/definition/signature help/inlay hints, outline, folding, workspace symbols and DAP debugging.",
   "version": "0.1.0",
   "publisher": "rip-lang",
   "license": "MIT",
+  "icon": "./icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LeePillar/rip-lang"
+  },
+  "homepage": "https://github.com/LeePillar/rip-lang#readme",
+  "bugs": {
+    "url": "https://github.com/LeePillar/rip-lang/issues"
+  },
+  "keywords": [
+    "rip",
+    "language",
+    "lsp",
+    "debugger"
+  ],
+  "galleryBanner": {
+    "color": "#1f2430",
+    "theme": "dark"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
   "engines": {
     "vscode": "^1.82.0"
   },
   "categories": [
     "Programming Languages",
     "Debuggers"
-  ],
-  "activationEvents": [
-    "onLanguage:rip"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -47,6 +66,21 @@
         }
       }
     },
+    "configurationDefaults": {
+      "[rip]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false,
+        "editor.wordBasedSuggestions": "off",
+        "editor.autoClosingBrackets": "languageDefined"
+      }
+    },
+    "snippets": [
+      {
+        "language": "rip",
+        "path": "./snippets/rip.json"
+      }
+    ],
     "debuggers": [
       {
         "type": "rip",

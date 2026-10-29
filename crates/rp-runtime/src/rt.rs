@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use rp_ast::*;
@@ -30,6 +30,10 @@ pub struct Runtime {
     #[allow(dead_code)]
     pub(crate) imports: HashMap<String, String>,
     pub(crate) globals: HashMap<String, Value>,
+    /// `std/template.register` 注册：模板函数名 → 程序里的具名函数名。
+    ///
+    /// 只存名字而不存 `Value::Func`，工作线程 / async 任务才能按名字重建。
+    pub(crate) template_funcs: Arc<Mutex<HashMap<String, String>>>,
     #[cfg(feature = "interp")]
     pub(crate) expr_types: HashMap<NodeId, Type>,
     /// 程序里是否出现固定位宽整数（`u8`…`i32`）；没有时跳过运算处的范围检查。
@@ -171,6 +175,8 @@ pub struct NativeModule {
     pub routes: std::sync::Arc<Vec<NativeRoute>>,
     pub tasks: std::sync::Arc<Vec<NativeTask>>,
     pub init: Option<fn(&mut Runtime) -> FlowResult<Value>>,
+    /// `std/template.register` 注册表：模板函数名 → 原生函数名。
+    pub template_funcs: std::sync::Arc<std::sync::Mutex<HashMap<String, String>>>,
 }
 
 /// 共享的字节码缓存句柄：同一编译单元只编译一次，跨线程 / 跨运行时复用。
@@ -190,6 +196,8 @@ pub enum RuntimeSeed {
         funcs: Arc<HashMap<String, Arc<FuncDecl>>>,
         /// 字节码编译结果：由第一个运行时编译一次，其余运行时直接共享。
         vm: SharedVm,
+        /// 模板自定义函数注册表；主运行时注册后，工作线程共享同一份。
+        template_funcs: std::sync::Arc<std::sync::Mutex<HashMap<String, String>>>,
     },
     Native(NativeModule),
 }
@@ -211,6 +219,7 @@ impl RuntimeSeed {
             checked: Arc::new(checked),
             funcs,
             vm,
+            template_funcs: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -222,11 +231,13 @@ impl RuntimeSeed {
                 checked,
                 funcs,
                 vm,
+                template_funcs,
             } => Runtime::from_ast(
                 Arc::clone(program),
                 Arc::clone(checked),
                 Arc::clone(funcs),
                 Arc::clone(&vm.0),
+                Arc::clone(template_funcs),
                 Vec::new(),
             ),
             RuntimeSeed::Native(module) => Runtime::new_native(module.clone()),
@@ -342,6 +353,7 @@ impl Runtime {
         checked: Arc<CheckResult>,
         funcs: Arc<HashMap<String, Arc<FuncDecl>>>,
         vm: Arc<crate::vm::VmCache>,
+        template_funcs: Arc<Mutex<HashMap<String, String>>>,
         cli_args: Vec<String>,
     ) -> Self {
         let mut module_vars = Vec::new();
@@ -380,6 +392,7 @@ impl Runtime {
             funcs,
             imports,
             globals: HashMap::new(),
+            template_funcs,
             expr_types,
             has_width_ints,
             type_names,
@@ -451,6 +464,8 @@ impl Runtime {
             };
             let mut runtime = Self::new(&program, checked, Vec::new());
             runtime.imports = module.imports.clone();
+            // AOT 下注册表随原生模块共享，主运行时注册后工作线程可见。
+            runtime.template_funcs = Arc::clone(&module.template_funcs);
             runtime.native = Some(module);
             runtime
         }
@@ -460,6 +475,7 @@ impl Runtime {
                 funcs: Arc::new(HashMap::new()),
                 imports: module.imports.clone(),
                 globals: HashMap::new(),
+                template_funcs: std::sync::Arc::clone(&module.template_funcs),
                 cli_args: Vec::new(),
                 log_level: "info".to_string(),
                 log_format: "text".to_string(),
@@ -510,6 +526,7 @@ impl Runtime {
                     checked: Arc::clone(&self.checked),
                     funcs: Arc::clone(&self.funcs),
                     vm: SharedVm(Arc::clone(&self.vm)),
+                    template_funcs: Arc::clone(&self.template_funcs),
                 };
                 #[cfg(not(feature = "interp"))]
                 let seed = RuntimeSeed::Native(NativeModule::default());

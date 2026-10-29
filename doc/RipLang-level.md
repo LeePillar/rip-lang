@@ -2020,7 +2020,7 @@ type http.sse_event = [event: string, data: string];
 - **响应压缩**：1KiB 以上的文本类响应按 `Accept-Encoding` 自动 gzip，并补 `Vary: Accept-Encoding`；静态文件与 SSE 不压缩。无需在业务代码里处理。
 - **静态资源**：`http.static` 响应带 `ETag` / `Last-Modified` / `Cache-Control`，支持 `If-None-Match`（`304`）与单段 `Range`（`206` / `416`），文件从磁盘流式发送，不占解释器内存；HTML 用 `no-cache`，其余长缓存。
 - **会话与校验**：`std/session` 提供 HMAC-SHA256 签名的无状态 cookie（`save` / `cookie` / `load` / `clear` / `csrf_token` / `csrf_check`），多实例无需共享存储；`std/validate` 把字段校验写成一行并返回可读错误。`std/jwt` 提供 HS256 的 `sign` / `verify`（校验强制算法为 HS256、拒绝 `none`、默认强制校验 `exp`，可选传入 `aud` / `iss` 做受众与签发方校验）。密钥必须来自环境变量或配置。`Set-Cookie` 的 `Secure` 属性判定：服务端启用 HTTPS（`--cert` / `--key`）时自动附加；纯 HTTP 部署在可信代理之后（`trust_proxy = true`）时，`cookie(value, ttl, request)` 与 `clear(request)` 传入当前请求即按 `X-Forwarded-Proto` 最右值判定是否附加 `Secure`（不传请求参数则保持旧行为，不加 `Secure`）。
-- **模板**：`std/template.render(source, data)` 默认 HTML 转义，支持 `if` / `unless` / `each` / 注释；编译结果按源码缓存在线程本地，适合服务端渲染。
+- **模板**：`std/template.render(source, data)` 默认 HTML 转义，支持 `if` / `unless` / `each` / 注释；编译结果按源码缓存在线程本地，适合服务端渲染。语法本身固定，但可用 `std/template.register(name, f)` 注册模块级具名函数，在模板里以 `{{ f(参数…) }}` 调用（注册表随运行时共享，HTTP 工作线程同样可用）。
 - 返回 HTML：`body` + `headers = ["Content-Type" = "text/html; charset=utf-8"]`。
 - 返回 JSON：用 `json` 字段（糖），或自己 `json.encode` 后放 `body` + 手写头（手动）。**两种都允许**，语义不同，不算第二写法。
 - `multipart/form-data` 请求自动解析：普通字段并入 `form`，文件进入 `files`；`http.save_file(目录, 文件)` 解码 `data_base64`、安全化文件名后写入目录（目录不存在时自动创建），返回落盘路径或 `err(...)`。目录参数是普通字符串，由代码决定，运行时没有任何内置上传目录。

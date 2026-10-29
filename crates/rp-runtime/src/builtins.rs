@@ -526,7 +526,7 @@ impl Runtime {
         }
     }
 
-    /// `std/template`：服务端 HTML 渲染，默认自动转义。
+    /// `std/template`：服务端 HTML 渲染，默认自动转义；`register` 注册自定义函数。
     fn template_module(
         &mut self,
         name: &str,
@@ -537,7 +537,31 @@ impl Runtime {
             "render" => {
                 let source = self.string_arg(&args, 0, name, line)?;
                 let data = args.get(1).cloned().unwrap_or(Value::Null);
-                match crate::template::render(&source, &data) {
+                // 先克隆注册表，避免渲染期间再注册时与 `self` 的可变借用冲突。
+                let registry = Arc::clone(&self.template_funcs);
+                let result = crate::template::render_with(&source, &data, &mut |func_name, values| {
+                    let target = {
+                        let map = registry
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner());
+                        map.get(func_name).cloned()
+                    };
+                    let Some(target) = target else {
+                        return Err(format!("模板函数 '{}' 未注册", func_name));
+                    };
+                    // 只按名字重建，工作线程 / async 任务里的注册表才同样可用。
+                    let Some(Value::Func(func)) = self.handler_from_spec(
+                        &crate::server::HandlerSpec::Func(target),
+                    ) else {
+                        return Err(format!("模板函数 '{}' 不可用", func_name));
+                    };
+                    match self.call_value(&func, values.to_vec(), line) {
+                        Ok(value) => Ok(value),
+                        Err(Flow::Error(error)) => Err(error.message),
+                        Err(_) => Err(format!("模板函数 '{}' 执行中断", func_name)),
+                    }
+                });
+                match result {
                     Ok(text) => Ok(Value::string(text)),
                     Err(message) => self.error(message, line),
                 }
@@ -545,6 +569,35 @@ impl Runtime {
             "escape" => {
                 let text = self.string_arg(&args, 0, name, line)?;
                 Ok(Value::string(crate::template::escape(&text)))
+            }
+            "register" => {
+                let template_name = self.string_arg(&args, 0, name, line)?;
+                if template_name.trim().is_empty() {
+                    return self.error("template.register expects a non-empty name", line);
+                }
+                let Some(Value::Func(func)) = args.get(1).cloned() else {
+                    return self.error("template.register expects a function", line);
+                };
+                // 只允许模块级具名函数：工作线程按名字重建，匿名闭包无法跨线程。
+                let func_name = func.name.clone();
+                let mut resolvable = self.funcs.contains_key(&func_name);
+                if !resolvable {
+                    if let Some(module) = self.native.as_ref() {
+                        resolvable = module.funcs.contains_key(&func_name);
+                    }
+                }
+                if !resolvable {
+                    return self.error(
+                        "template.register only accepts named module-level functions",
+                        line,
+                    );
+                }
+                let mut registry = self
+                    .template_funcs
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                registry.insert(template_name, func_name);
+                Ok(Value::Null)
             }
             "clear_cache" => {
                 crate::template::clear_cache();

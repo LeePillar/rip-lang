@@ -5,6 +5,8 @@
 //! - `{{#if user}}…{{else}}…{{/if}}`、`{{#unless user}}…{{/unless}}`。
 //! - `{{#each items}}…{{ . }}…{{ @index }}…{{/each}}`，内层可读外层变量。
 //! - `{{! 注释 }}`。
+//! - `{{ fn(arg) }}`：调用 `std/template.register` 注册的自定义函数；实参可以是
+//!   作用域路径、字符串、整数、浮点、布尔或 `null`。
 //!
 //! 编译结果按模板源码缓存在线程本地（每个工作线程一份），
 //! 页面渲染只需一次哈希查找 + 遍历已编译节点。
@@ -24,6 +26,12 @@ enum Node {
     Text(String),
     /// 变量路径：`user.name`、`.`、`@index`。
     Var { path: String, raw: bool },
+    /// 自定义函数调用：`{{ upper(name) }}`、`{{{ f("x", 1) }}}`。
+    Call {
+        name: String,
+        args: Vec<Arg>,
+        raw: bool,
+    },
     If {
         path: String,
         negate: bool,
@@ -33,13 +41,35 @@ enum Node {
     Each { path: String, body: Vec<Node> },
 }
 
+/// 函数调用的实参：路径按作用域查找，字面量直接求值。
+enum Arg {
+    Path(String),
+    Lit(Value),
+}
+
 enum Stop {
     End,
     Else,
 }
 
-/// 渲染模板；编译结果按源码缓存。
+/// 渲染模板；编译结果按源码缓存。未注册的自定义函数会报错。
+///
+/// 仅测试与无函数场景使用；运行时入口走 [`render_with`]。
+#[cfg(test)]
 pub fn render(source: &str, data: &Value) -> Result<String, String> {
+    render_with(source, data, &mut |name, _args| {
+        Err(format!("模板函数 '{}' 未注册", name))
+    })
+}
+
+/// 渲染模板并允许调用外部注册的函数。
+///
+/// `call` 收到函数名与实参值，返回渲染结果；错误信息会带上行号由调用方处理。
+pub fn render_with(
+    source: &str,
+    data: &Value,
+    call: &mut dyn FnMut(&str, &[Value]) -> Result<Value, String>,
+) -> Result<String, String> {
     let template = compiled(source)?;
     let scope = Scope {
         value: Some(data.clone()),
@@ -47,7 +77,7 @@ pub fn render(source: &str, data: &Value) -> Result<String, String> {
         parent: None,
     };
     let mut out = String::with_capacity(source.len() + 64);
-    render_nodes(&template.nodes, &scope, &mut out);
+    render_nodes(&template.nodes, &scope, &mut out, call)?;
     Ok(out)
 }
 
@@ -133,11 +163,11 @@ impl<'a> Parser<'a> {
                 let end = rest
                     .find("}}}")
                     .ok_or_else(|| "模板里的 {{{ 没有闭合".to_string())?;
-                let path = rest[3..end].trim().to_string();
-                if path.is_empty() {
+                let inner = rest[3..end].trim().to_string();
+                if inner.is_empty() {
                     return Err("模板变量名为空".to_string());
                 }
-                nodes.push(Node::Var { path, raw: true });
+                nodes.push(action_node(&inner, true)?);
                 self.pos += end + 3;
                 continue;
             }
@@ -193,12 +223,120 @@ impl<'a> Parser<'a> {
             if inner.is_empty() {
                 return Err("模板变量名为空".to_string());
             }
-            nodes.push(Node::Var {
-                path: inner,
-                raw: false,
-            });
+            nodes.push(action_node(&inner, false)?);
         }
     }
+}
+
+/// 动作内容分派：`名字(参数…)` 是函数调用，其余按变量路径处理。
+fn action_node(inner: &str, raw: bool) -> Result<Node, String> {
+    let inner = inner.trim();
+    let Some(open) = inner.find('(') else {
+        return Ok(Node::Var {
+            path: inner.to_string(),
+            raw,
+        });
+    };
+    if !inner.ends_with(')') {
+        return Err(format!("模板函数调用 '{}' 缺少 ')'", inner));
+    }
+    let name = inner[..open].trim();
+    if name.is_empty() || !name.chars().all(|ch| ch.is_alphanumeric() || ch == '_') {
+        return Err(format!("模板函数名不合法：'{}'", name));
+    }
+    let mut args = Vec::new();
+    for raw_arg in split_args(&inner[open + 1..inner.len() - 1])? {
+        args.push(parse_arg(raw_arg)?);
+    }
+    Ok(Node::Call {
+        name: name.to_string(),
+        args,
+        raw,
+    })
+}
+
+/// 按顶层逗号切分实参；字符串与括号内部不切分。
+fn split_args(src: &str) -> Result<Vec<&str>, String> {
+    let mut args = Vec::new();
+    let mut depth = 0i32;
+    let mut quote: Option<char> = None;
+    let mut start = 0usize;
+    for (index, ch) in src.char_indices() {
+        match quote {
+            Some(closed) if ch == closed => quote = None,
+            Some(_) => {}
+            None => match ch {
+                '"' | '\'' => quote = Some(ch),
+                '(' => depth += 1,
+                ')' => depth -= 1,
+                ',' if depth == 0 => {
+                    args.push(src[start..index].trim());
+                    start = index + 1;
+                }
+                _ => {}
+            },
+        }
+    }
+    if quote.is_some() {
+        return Err("模板函数调用的字符串参数没有闭合".to_string());
+    }
+    let tail = src[start..].trim();
+    if !tail.is_empty() {
+        args.push(tail);
+    } else if src.trim().is_empty() {
+        return Ok(args);
+    } else {
+        return Err("模板函数调用的参数列表末尾多了一个逗号".to_string());
+    }
+    Ok(args)
+}
+
+/// 实参：带引号的是字符串字面量，整数/浮点/布尔/null 也是字面量，其余按路径查找。
+fn parse_arg(raw: &str) -> Result<Arg, String> {
+    let raw = raw.trim();
+    if raw.len() >= 2 {
+        let first = raw.chars().next().unwrap_or_default();
+        let last = raw.chars().last().unwrap_or_default();
+        if (first == '"' || first == '\'') && last == first {
+            return Ok(Arg::Lit(Value::string(unescape(&raw[1..raw.len() - 1]))));
+        }
+    }
+    match raw {
+        "true" => return Ok(Arg::Lit(Value::Bool(true))),
+        "false" => return Ok(Arg::Lit(Value::Bool(false))),
+        "null" | "none" => return Ok(Arg::Lit(Value::Null)),
+        _ => {}
+    }
+    if let Ok(value) = raw.parse::<i64>() {
+        return Ok(Arg::Lit(Value::Int(value)));
+    }
+    if let Ok(value) = raw.parse::<f64>() {
+        return Ok(Arg::Lit(Value::Float(value)));
+    }
+    if raw.is_empty() {
+        return Err("模板函数调用存在空参数".to_string());
+    }
+    Ok(Arg::Path(raw.to_string()))
+}
+
+/// 字符串字面量里的常见转义。
+fn unescape(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars();
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            out.push(ch);
+            continue;
+        }
+        match chars.next() {
+            Some('n') => out.push('\n'),
+            Some('t') => out.push('\t'),
+            Some('r') => out.push('\r'),
+            Some(other) => out.push(other),
+            None => out.push('\\'),
+        }
+    }
+    out
 }
 
 fn parts_check(keyword: &str, path: &str) -> Result<(), String> {
@@ -218,7 +356,12 @@ struct Scope<'a> {
     parent: Option<&'a Scope<'a>>,
 }
 
-fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
+fn render_nodes(
+    nodes: &[Node],
+    scope: &Scope<'_>,
+    out: &mut String,
+    call: &mut dyn FnMut(&str, &[Value]) -> Result<Value, String>,
+) -> Result<(), String> {
     for node in nodes {
         match node {
             Node::Text(text) => out.push_str(text),
@@ -226,6 +369,22 @@ fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
                 let Some(value) = lookup(scope, path) else {
                     continue;
                 };
+                let text = output_text(&value);
+                if *raw {
+                    out.push_str(&text);
+                } else {
+                    out.push_str(&escape(&text));
+                }
+            }
+            Node::Call { name, args, raw } => {
+                let mut values = Vec::with_capacity(args.len());
+                for arg in args {
+                    values.push(match arg {
+                        Arg::Lit(value) => value.clone(),
+                        Arg::Path(path) => lookup(scope, path).unwrap_or(Value::Null),
+                    });
+                }
+                let value = call(name, &values)?;
                 let text = output_text(&value);
                 if *raw {
                     out.push_str(&text);
@@ -241,7 +400,7 @@ fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
             } => {
                 let truthy = lookup(scope, path).is_some_and(|value| is_truthy(&value));
                 let branch = if truthy != *negate { yes } else { no };
-                render_nodes(branch, scope, out);
+                render_nodes(branch, scope, out, call)?;
             }
             Node::Each { path, body } => {
                 let Some(items) = lookup(scope, path) else {
@@ -255,7 +414,7 @@ fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
                                 index: Some(index as i64),
                                 parent: Some(scope),
                             };
-                            render_nodes(body, &inner, out);
+                            render_nodes(body, &inner, out, call)?;
                         }
                     }
                     // 结构体数组按字段顺序遍历，便于渲染 `http.request` 这类值。
@@ -272,7 +431,7 @@ fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
                                 index: Some(index as i64),
                                 parent: Some(scope),
                             };
-                            render_nodes(body, &inner, out);
+                            render_nodes(body, &inner, out, call)?;
                         }
                     }
                     _ => {}
@@ -280,6 +439,7 @@ fn render_nodes(nodes: &[Node], scope: &Scope<'_>, out: &mut String) {
             }
         }
     }
+    Ok(())
 }
 
 /// 路径查找：先查最内层作用域，逐层向外；`a.b` 逐段下钻。
@@ -397,5 +557,46 @@ mod tests {
         ]);
         let out = render("{{#each items}}{{ title }}-{{ . }}{{/each}}", &payload).expect("render");
         assert_eq!(out, "T-1");
+    }
+
+    #[test]
+    fn calls_registered_function() {
+        let payload = data(vec![("name", Value::string("rip"))]);
+        let mut call = |name: &str, args: &[Value]| match name {
+            "upper" => Ok(Value::string(
+                args[0].as_str().unwrap_or_default().to_uppercase(),
+            )),
+            "tag" => Ok(Value::string(format!(
+                "<{}>",
+                args[0].as_str().unwrap_or_default()
+            ))),
+            other => Err(format!("unknown {}", other)),
+        };
+        let out = render_with(
+            "{{ upper(name) }}|{{ tag(name) }}|{{{ tag(name) }}}|{{ tag(\"a,b\") }}",
+            &payload,
+            &mut call,
+        )
+        .expect("render");
+        assert_eq!(out, "RIP|&lt;rip&gt;|<rip>|&lt;a,b&gt;");
+    }
+
+    #[test]
+    fn literal_args_parse() {
+        let mut call = |name: &str, args: &[Value]| {
+            assert_eq!(name, "mix");
+            assert_eq!(args.len(), 3);
+            assert!(matches!(args[0], Value::Int(42)));
+            assert!(matches!(args[1], Value::Float(value) if (value - 1.5).abs() < f64::EPSILON));
+            assert!(matches!(args[2], Value::Bool(true)));
+            Ok(Value::string("ok"))
+        };
+        let out = render_with("{{ mix(42, 1.5, true) }}", &data(vec![]), &mut call).expect("render");
+        assert_eq!(out, "ok");
+    }
+
+    #[test]
+    fn rejects_unregistered_function() {
+        assert!(render("{{ upper(name) }}", &data(vec![])).is_err());
     }
 }

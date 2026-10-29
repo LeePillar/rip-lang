@@ -435,7 +435,7 @@ impl<'a> Generator<'a> {
             );
         }
         format!(
-            "fn rip_module() -> NativeModule {{\n    let mut funcs: HashMap<String, NativeEntry> = HashMap::new();\n{}\n    let mut routes: Vec<NativeRoute> = Vec::new();\n{}\n    let mut tasks: Vec<NativeTask> = Vec::new();\n{}\n    NativeModule {{ imports: rip_imports(), funcs: std::sync::Arc::new(funcs), routes: std::sync::Arc::new(routes), tasks: std::sync::Arc::new(tasks), init: Some(rip_init) }}\n}}\n\n",
+            "fn rip_module() -> NativeModule {{\n    let mut funcs: HashMap<String, NativeEntry> = HashMap::new();\n{}\n    let mut routes: Vec<NativeRoute> = Vec::new();\n{}\n    let mut tasks: Vec<NativeTask> = Vec::new();\n{}\n    NativeModule {{ imports: rip_imports(), funcs: std::sync::Arc::new(funcs), routes: std::sync::Arc::new(routes), tasks: std::sync::Arc::new(tasks), init: Some(rip_init), template_funcs: Default::default() }}\n}}\n\n",
             funcs.trim_end(),
             routes.trim_end(),
             tasks.trim_end()

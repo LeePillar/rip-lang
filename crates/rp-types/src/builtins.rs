@@ -379,7 +379,7 @@ pub fn builtin_module_names(module: &str) -> &'static [&'static str] {
             "load", "save", "cookie", "clear", "csrf_token", "csrf_check",
         ],
         "std/validate" => &["required", "int_range", "string_len", "email"],
-        "std/template" => &["render", "escape", "clear_cache"],
+        "std/template" => &["render", "escape", "register", "clear_cache"],
         "std/jwt" => &["sign", "verify"],
         "std/str" => &[
             "split", "join", "trim", "trim_start", "trim_end", "contains", "starts_with",
@@ -705,6 +705,7 @@ pub fn builtin_function(module: &str, name: &str) -> Option<BuiltinSig> {
         return Some(match name {
             "render" => sig(vec![string(), map_of(string(), any())], string()),
             "escape" => sig(vec![string()], string()),
+            "register" => sig(vec![string(), any()], void()),
             "clear_cache" => sig(vec![], void()),
             _ => return None,
         });

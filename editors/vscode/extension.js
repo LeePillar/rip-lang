@@ -14,7 +14,7 @@ function activate(context) {
         'rip',
         'Rip Language Server',
         { command, args: ['lsp'], transport: TransportKind.stdio },
-        { documentSelector: [{ scheme: 'file', language: 'rip' }] }
+        { documentSelector: [{ language: 'rip' }] }
     );
     context.subscriptions.push(client.start());
 

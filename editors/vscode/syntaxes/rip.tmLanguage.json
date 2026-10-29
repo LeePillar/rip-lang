@@ -14,7 +14,8 @@
     { "include": "#keywords" },
     { "include": "#types" },
     { "include": "#functions" },
-    { "include": "#module-path" }
+    { "include": "#module-path" },
+    { "include": "#operators" }
   ],
   "repository": {
     "comments": {
@@ -34,12 +35,32 @@
       "patterns": [
         {
           "name": "meta.attribute.rip",
-          "match": "#\\[[A-Za-z_][A-Za-z0-9_]*(?:\\([^\\]]*\\))?\\]"
+          "begin": "#\\[",
+          "end": "\\]",
+          "patterns": [
+            { "include": "#strings" }
+          ]
         }
       ]
     },
     "strings": {
       "patterns": [
+        {
+          "name": "string.quoted.triple.rip",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.rip",
+              "match": "\\\\\\$\\{"
+            },
+            {
+              "name": "meta.interpolation.rip",
+              "match": "\\$\\{[^}\\n]*\\}"
+            },
+            { "name": "constant.character.escape.rip", "match": "\\\\." }
+          ]
+        },
         {
           "name": "string.quoted.double.rip",
           "begin": "\"",
@@ -54,7 +75,7 @@
       "patterns": [
         {
           "name": "string.quoted.single.rip",
-          "match": "'(\\\\.|[^'\\\\])'"
+          "match": "'(\\\\.|[^'\\\\\\n])'"
         }
       ]
     },
@@ -62,7 +83,7 @@
       "patterns": [
         {
           "name": "constant.numeric.rip",
-          "match": "\\b(?:0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:[0-9][0-9_]*)(?:\\.[0-9_]+)?(?:[eE][+-]?[0-9_]+)?)\\b"
+          "match": "\\b(?:0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:[0-9][0-9_]*)(?:\\.[0-9_]+)?(?:[eE][+-]?[0-9_]+)?)(?:[iu](?:8|16|32|64)|f64)?\\b"
         }
       ]
     },
@@ -70,11 +91,11 @@
       "patterns": [
         {
           "name": "keyword.control.rip",
-          "match": "\\b(?:if|else|for|in|loop|while|match|break|continue|return|parallel|defer|async|await)\\b"
+          "match": "\\b(?:if|elif|else|for|in|loop|while|match|break|continue|return|parallel|defer|async|await)\\b"
         },
         {
           "name": "keyword.other.rip",
-          "match": "\\b(?:mod|use|as|pub|type|interface|enum|func|let|mut|const|static|self|read|write|share)\\b"
+          "match": "\\b(?:mod|use|as|pub|type|struct|obj|interface|enum|func|let|mut|const|static|self|read|write|share)\\b"
         },
         {
           "name": "constant.language.rip",
@@ -86,7 +107,11 @@
       "patterns": [
         {
           "name": "support.type.primitive.rip",
-          "match": "\\b(?:int|int2|int8|int16|float|string|char|bool|void|any|vec|map|option|result|share|task)\\b"
+          "match": "\\b(?:int|i8|i16|i32|i64|u8|u16|u32|u64|float|string|bool|void|any|func)\\b"
+        },
+        {
+          "name": "support.type.construct.rip",
+          "match": "\\b(?:vec|map|option|result|task|share)\\b"
         }
       ]
     },
@@ -94,7 +119,11 @@
       "patterns": [
         {
           "name": "entity.name.function.rip",
-          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()"
+          "match": "(?<=\\bfunc\\s+)[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)?(?=\\s*\\()"
+        },
+        {
+          "name": "variable.function.call.rip",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()"
         }
       ]
     },
@@ -102,7 +131,23 @@
       "patterns": [
         {
           "name": "variable.other.module.rip",
-          "match": "\\b(?:std|rust)(?:\\.[A-Za-z_][A-Za-z0-9_]*)+"
+          "match": "\\b(?:std|rust)(?:\\s*::\\s*[A-Za-z_][A-Za-z0-9_]*)+"
+        },
+        {
+          "name": "punctuation.separator.namespace.rip",
+          "match": "::"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.rip",
+          "match": "->|=>|==|!=|<=|>=|&&|\\|\\||\\+|-|\\*|/|%|!|="
+        },
+        {
+          "name": "keyword.operator.propagation.rip",
+          "match": "\\?"
         }
       ]
     }

@@ -924,10 +924,11 @@ validate.email(value) -> result<string, string>
 
 template.render(source, data) -> string
 template.escape(text) -> string
+template.register(name, f) -> void
 template.clear_cache() -> void
 ```
 
-模板语法：`{{ x }}` 自动转义、`{{{ raw }}}` 原样输出、`{{#if x}}…{{else}}…{{/if}}`、`{{#unless x}}`、`{{#each items}}{{ @index }}:{{ . }}{{/each}}`、`{{! 注释 }}`。
+模板语法：`{{ x }}` 自动转义、`{{{ raw }}}` 原样输出、`{{#if x}}…{{else}}…{{/if}}`、`{{#unless x}}`、`{{#each items}}{{ @index }}:{{ . }}{{/each}}`、`{{! 注释 }}`；`register` 注册后可写 `{{ f(name, "x", 1) }}`（实参支持变量路径、字符串、整数/浮点、布尔、`null`；只能注册模块级具名函数）。
 
 ```rp
 let token: string = jwt.sign(["sub" = "42", "role" = "admin"], secret, 3600);

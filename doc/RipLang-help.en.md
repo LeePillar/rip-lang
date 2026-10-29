@@ -924,10 +924,11 @@ validate.email(value) -> result<string, string>
 
 template.render(source, data) -> string
 template.escape(text) -> string
+template.register(name, f) -> void
 template.clear_cache() -> void
 ```
 
-Template syntax: `{{ x }}` escapes automatically, `{{{ raw }}}` outputs verbatim, `{{#if x}}…{{else}}…{{/if}}`, `{{#unless x}}`, `{{#each items}}{{ @index }}:{{ . }}{{/each}}`, `{{! comment }}`.
+Template syntax: `{{ x }}` escapes automatically, `{{{ raw }}}` outputs verbatim, `{{#if x}}…{{else}}…{{/if}}`, `{{#unless x}}`, `{{#each items}}{{ @index }}:{{ . }}{{/each}}`, `{{! comment }}`; after `register`, call custom functions with `{{ f(name, "x", 1) }}` (arguments may be variable paths, strings, integers/floats, booleans, or `null`; only named module-level functions can be registered).
 
 ```rp
 let token: string = jwt.sign(["sub" = "42", "role" = "admin"], secret, 3600);
