@@ -1868,11 +1868,11 @@ dependencies = [
 
 [[package]]
 name = "rp-ast"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "rp-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
  "rp-dap",
@@ -1891,14 +1891,14 @@ dependencies = [
 
 [[package]]
 name = "rp-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-runtime",
 ]
 
 [[package]]
 name = "rp-dap"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-runtime",
  "serde_json",
@@ -1906,14 +1906,14 @@ dependencies = [
 
 [[package]]
 name = "rp-lexer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
 ]
 
 [[package]]
 name = "rp-lsp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
  "rp-lexer",
@@ -1925,7 +1925,7 @@ dependencies = [
 
 [[package]]
 name = "rp-ownership"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
  "rp-types",
@@ -1933,7 +1933,7 @@ dependencies = [
 
 [[package]]
 name = "rp-parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
  "rp-lexer",
@@ -1941,7 +1941,7 @@ dependencies = [
 
 [[package]]
 name = "rp-runtime"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -1984,14 +1984,14 @@ dependencies = [
 
 [[package]]
 name = "rp-rust-interop"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-types",
 ]
 
 [[package]]
 name = "rp-types"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rp-ast",
 ]

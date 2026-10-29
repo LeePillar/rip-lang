@@ -77,7 +77,9 @@ jobs:
           merge-multiple: true
           path: artifacts
 
-      - name: Create release
+      - name: Create or extend release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" artifacts/* --generate-notes --title "$GITHUB_REF_NAME"
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/* --generate-notes --title "$GITHUB_REF_NAME" \
+            || gh release upload "$GITHUB_REF_NAME" artifacts/* --clobber

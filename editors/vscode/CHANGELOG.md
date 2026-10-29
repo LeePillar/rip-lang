@@ -3,6 +3,16 @@
 All notable changes to the Rip VS Code extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-10-29
+
+### Added
+
+- `std/template.register(name, f)` registers custom template functions, called as `{{ f(args…) }}`; arguments support variable paths, strings, numbers, booleans and `null`.
+
+### Fixed
+
+- Removed redundant `activationEvents` now generated automatically from `contributes.languages`.
+
 ## [0.1.0] - 2026-10-29
 
 ### Added

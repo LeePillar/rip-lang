@@ -4,7 +4,7 @@
 
 Rip 是一门面向服务端与 Web 的强类型语言：零类型推断、无 `class`、引用计数 + 环回收，保留 Rust 的所有权语义；同一份源码既能解释执行，也能编译成不依赖运行时的原生二进制。
 
-[![version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#)
+[![version](https://img.shields.io/badge/version-0.1.1-blue.svg)](#)
 [![platform](https://img.shields.io/badge/platform-windows%20x64%20%7C%20linux-lightgrey.svg)](#安装)
 [![runtime](https://img.shields.io/badge/runtime-interpreter%20%2B%20AOT-green.svg)](#两种执行模式)
 
@@ -54,7 +54,7 @@ Rip 的核心原则是**唯一写法**：同一语义只允许一种语法，不
 
 Windows x64 运行时已打包为自包含安装包，内置编译器、链接器与 AOT 运行时库，机器上**不需要**安装 Rust / cargo / 任何编译工具：
 
-1. 从 [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.0) 下载 `rip-0.1.0-windows-x64.zip` 并解压
+1. 从 [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.1) 下载 `rip-0.1.1-windows-x64.zip` 并解压
 2. 双击解压目录内的 `install.cmd`，脚本会把该目录写入**当前用户 PATH**（无需管理员权限）
 3. 新开一个终端，执行 `rip doctor` 自检
 
@@ -192,4 +192,4 @@ RIP_HTTP_DEBUG       输出连接与任务轨迹
 
 ## 状态
 
-当前版本 `0.1.0`，语言规范见 `doc/RipLang-level.md`（v1.3）。语言与运行时仍在演进，涉及语法、类型与标准库的变更以规范文档为准。
+当前版本 `0.1.1`，语言规范见 `doc/RipLang-level.md`（v1.3）。语言与运行时仍在演进，涉及语法、类型与标准库的变更以规范文档为准。

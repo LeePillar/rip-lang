@@ -4,7 +4,7 @@
 
 Rip is a strongly typed language for server-side and web development: no type inference, no `class`, reference counting with cycle collection, and Rust-style ownership semantics. A single source file can be interpreted directly or compiled into a native binary that needs no runtime.
 
-[![version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#)
+[![version](https://img.shields.io/badge/version-0.1.1-blue.svg)](#)
 [![platform](https://img.shields.io/badge/platform-windows%20x64%20%7C%20linux-lightgrey.svg)](#install)
 [![runtime](https://img.shields.io/badge/runtime-interpreter%20%2B%20AOT-green.svg)](#two-execution-modes)
 
@@ -54,7 +54,7 @@ Only two delivery forms are exposed to users:
 
 The Windows x64 runtime ships as a self-contained package: compiler, linker and AOT runtime libraries are bundled, so **no** Rust / cargo / build tools are required:
 
-1. Download `rip-0.1.0-windows-x64.zip` from [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.0) and extract it
+1. Download `rip-0.1.1-windows-x64.zip` from [Releases](https://github.com/LeePillar/rip-lang/releases/tag/v0.1.1) and extract it
 2. Run `install.cmd` inside the extracted folder — it appends that folder to the **current user PATH** (no administrator rights needed)
 3. Open a new terminal and run `rip doctor`
 
@@ -192,4 +192,4 @@ RIP_HTTP_DEBUG       print connection and task traces
 
 ## Status
 
-Current version `0.1.0`; the language specification is `doc/RipLang-level.md` (v1.3). The language and runtime are still evolving — syntax, type and standard-library changes follow the specification.
+Current version `0.1.1`; the language specification is `doc/RipLang-level.md` (v1.3). The language and runtime are still evolving — syntax, type and standard-library changes follow the specification.

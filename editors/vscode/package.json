@@ -2,7 +2,7 @@
   "name": "rip-lang",
   "displayName": "Rip",
   "description": "Rip language support: syntax highlighting, LSP diagnostics/completion/hover/definition/signature help/inlay hints, outline, folding, workspace symbols and DAP debugging.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "rip-lang",
   "license": "MIT",
   "icon": "./icon.png",
